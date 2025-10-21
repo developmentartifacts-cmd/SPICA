@@ -11,3 +11,10 @@ plugins {
     alias(libs.plugins.googleGmsGoogleServices) apply false
     alias(libs.plugins.googleFirebaseCrashlytics) apply false
 }
+
+
+buildscript {
+   dependencies {
+        classpath(libs.plugins.googleGmsGoogleServices)
+   }
+}
