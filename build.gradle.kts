@@ -12,9 +12,10 @@ plugins {
     alias(libs.plugins.googleFirebaseCrashlytics) apply false
 }
 
-
+/*
 buildscript {
    dependencies {
         classpath(libs.plugins.googleGmsGoogleServices)
    }
 }
+*/
