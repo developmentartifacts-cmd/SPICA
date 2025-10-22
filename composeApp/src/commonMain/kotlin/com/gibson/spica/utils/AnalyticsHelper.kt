@@ -1,48 +1,44 @@
 package com.gibson.spica.utils
 
+import android.content.Context
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.FirebaseApp
+import com.google.firebase.analytics.FirebaseAnalytics.Event
+import com.google.firebase.analytics.FirebaseAnalytics.Param
 
 /**
- * Simple analytics helper to log Firebase events across SPICA.
- * Keeps event tracking consistent and centralized.
+ * Handles Firebase Analytics event logging and screen tracking.
+ * Requires a Context from an Activity or Application.
  */
 object AnalyticsHelper {
 
-    private val analytics: FirebaseAnalytics by lazy {
-        FirebaseAnalytics.getInstance(FirebaseApp.getInstance())
+    private var firebaseAnalytics: FirebaseAnalytics? = null
+
+    /**
+     * Initialize Analytics. Must be called once (e.g., in MainActivity.onCreate()).
+     */
+    fun init(context: Context) {
+        firebaseAnalytics = FirebaseAnalytics.getInstance(context)
     }
 
     /**
-     * Log a named event with optional parameters.
+     * Log a custom event.
      */
-    fun logEvent(eventName: String, params: Map<String, Any>? = null) {
+    fun logEvent(eventName: String, params: Map<String, String> = emptyMap()) {
+        val analytics = firebaseAnalytics ?: return
         val bundle = android.os.Bundle()
-        params?.forEach { (key, value) ->
-            when (value) {
-                is String -> bundle.putString(key, value)
-                is Int -> bundle.putInt(key, value)
-                is Long -> bundle.putLong(key, value)
-                is Double -> bundle.putDouble(key, value)
-                is Boolean -> bundle.putBoolean(key, value)
-            }
-        }
+        params.forEach { (key, value) -> bundle.putString(key, value) }
         analytics.logEvent(eventName, bundle)
     }
 
     /**
-     * Set the current screen name for analytics tracking.
+     * Track a screen view.
      */
-    fun setCurrentScreen(screenName: String) {
-        // Note: This must be called with an Activity context — handled at screen level if needed
-        // FirebaseAnalytics.getInstance(context).setCurrentScreen(activity, screenName, null)
-        // We'll keep a placeholder call until integrated with specific activities
-    }
-
-    /**
-     * Log a user property (e.g., user_type = "premium").
-     */
-    fun setUserProperty(key: String, value: String) {
-        analytics.setUserProperty(key, value)
+    fun logScreenView(screenName: String) {
+        val analytics = firebaseAnalytics ?: return
+        val bundle = android.os.Bundle().apply {
+            putString(Param.SCREEN_NAME, screenName)
+            putString(Param.SCREEN_CLASS, screenName)
+        }
+        analytics.logEvent(Event.SCREEN_VIEW, bundle)
     }
 }
