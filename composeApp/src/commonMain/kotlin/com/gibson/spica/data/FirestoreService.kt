@@ -10,14 +10,10 @@ object FirestoreService {
 
     private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
-    /**
-     * Get a Firestore collection reference.
-     */
+    /** Get a Firestore collection reference. */
     fun getCollection(collectionPath: String) = db.collection(collectionPath)
 
-    /**
-     * Add a new document with auto-generated ID.
-     */
+    /** Add a new document with auto-generated ID. */
     fun addDocument(
         collectionPath: String,
         data: Map<String, Any>,
@@ -29,9 +25,7 @@ object FirestoreService {
             .addOnFailureListener { e -> onResult(false, e.message) }
     }
 
-    /**
-     * Set a document by ID (overwrite or create if not exists).
-     */
+    /** Set a document by ID (overwrite or create if not exists). */
     fun setDocument(
         collectionPath: String,
         documentId: String,
@@ -45,9 +39,7 @@ object FirestoreService {
             .addOnFailureListener { e -> onResult(false, e.message) }
     }
 
-    /**
-     * Get a document snapshot once.
-     */
+    /** Get a document snapshot once. */
     fun getDocumentOnce(
         collectionPath: String,
         documentId: String,
@@ -63,9 +55,7 @@ object FirestoreService {
             .addOnFailureListener { e -> onResult(null, e.message) }
     }
 
-    /**
-     * Delete a document by ID.
-     */
+    /** Delete a document by ID. */
     fun deleteDocument(
         collectionPath: String,
         documentId: String,
