@@ -1,18 +1,19 @@
 package com.gibson.spica.data
 
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 
 /**
  * Handles Firebase Realtime Database operations.
- * Provides simple read and write helpers for structured data.
+ * Provides simple read, write, and listener helpers.
  */
 object RealtimeDatabaseService {
 
     private val db: FirebaseDatabase by lazy { FirebaseDatabase.getInstance() }
 
-    /**
-     * Write or overwrite data at a given path.
-     */
+    /** Write or overwrite data at a given path. */
     fun writeData(
         path: String,
         value: Any,
@@ -24,9 +25,7 @@ object RealtimeDatabaseService {
             .addOnFailureListener { e -> onResult(false, e.message) }
     }
 
-    /**
-     * Read data once from a given path.
-     */
+    /** Read data once from a given path. */
     fun readDataOnce(
         path: String,
         onResult: (Any?, String?) -> Unit
@@ -41,22 +40,19 @@ object RealtimeDatabaseService {
             }
     }
 
-    /**
-     * Listen for real-time updates on a specific path.
-     * Use removeListener() to stop observing later.
-     */
+    /** Listen for real-time updates on a specific path. */
     fun addValueListener(
         path: String,
         onDataChanged: (Any?) -> Unit,
         onError: (String?) -> Unit
-    ): com.google.firebase.database.ValueEventListener {
+    ): ValueEventListener {
         val ref = db.getReference(path)
-        val listener = object : com.google.firebase.database.ValueEventListener {
-            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
                 onDataChanged(snapshot.value)
             }
 
-            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
+            override fun onCancelled(error: DatabaseError) {
                 onError(error.message)
             }
         }
@@ -64,12 +60,10 @@ object RealtimeDatabaseService {
         return listener
     }
 
-    /**
-     * Remove a previously attached listener.
-     */
+    /** Remove a previously attached listener. */
     fun removeListener(
         path: String,
-        listener: com.google.firebase.database.ValueEventListener
+        listener: ValueEventListener
     ) {
         db.getReference(path).removeEventListener(listener)
     }
