@@ -1,0 +1,130 @@
+name: Generate Africa Geographic JSON
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate_geojson:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm init -y
+          npm install axios fs
+
+      - name: Generate Africa Geographic JSON
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+          const axios = require('axios');
+
+          const africaLGAsUrl = 'https://raw.githubusercontent.com/YourUsername/africa-lgas-postcodes/main/africa_lgas.json';
+          let africaLGAs = {};
+
+          async function loadAfricaLGAs() {
+            try {
+              const res = await axios.get(africaLGAsUrl);
+              africaLGAs = res.data;
+              console.log('Loaded African LGAs + postcodes.');
+            } catch(e) {
+              console.error('Failed to load Africa LGAs data:', e.message);
+            }
+          }
+
+          async function fetchCountries(continent) {
+            try {
+              const res = await axios.get(`https://restcountries.com/v3.1/region/${continent.toLowerCase()}`);
+              return res.data.map(c => ({
+                name: c.name.common,
+                code: c.cca2,
+                states: []
+              }));
+            } catch(e) {
+              console.error('Error fetching countries for', continent, e.message);
+              return [];
+            }
+          }
+
+          async function fetchStates(country) {
+            try {
+              const res = await axios.post('https://countriesnow.space/api/v0.1/countries/states', { country });
+              if(res.data && res.data.data && res.data.data.states) {
+                return res.data.data.states.map(s => ({ name: s.name, cities: [] }));
+              }
+              return [];
+            } catch(e) {
+              return [];
+            }
+          }
+
+          async function fetchCities(country, state) {
+            try {
+              const res = await axios.post('https://countriesnow.space/api/v0.1/countries/state/cities', { country, state });
+              if(res.data && res.data.data) {
+                return res.data.data.map(city => ({ name: city, lgas: [], postcode: null }));
+              }
+              return [];
+            } catch(e) {
+              return [];
+            }
+          }
+
+          async function main() {
+            await loadAfricaLGAs();
+            const geoData = {};
+
+            const continents = ["Africa", "Americas", "Asia", "Europe", "Oceania"];
+            for(const cont of continents) {
+              console.log('Fetching countries for', cont);
+              const countries = await fetchCountries(cont);
+
+              for(const country of countries) {
+                const states = await fetchStates(country.name);
+
+                for(const state of states) {
+                  let cities = await fetchCities(country.name, state.name);
+
+                  if(cont === 'Africa') {
+                    const countryLGAs = africaLGAs[country.name];
+                    if(countryLGAs) {
+                      const stateLGAs = countryLGAs[state.name];
+                      if(stateLGAs) {
+                        cities = Object.keys(stateLGAs).map(city => ({
+                          name: city,
+                          lgas: stateLGAs[city].lgas || [],
+                          postcode: stateLGAs[city].postcode || null
+                        }));
+                      }
+                    }
+                  }
+
+                  state.cities = cities;
+                }
+
+                country.states = states;
+              }
+
+              geoData[cont] = countries;
+            }
+
+            fs.writeFileSync('geoData.json', JSON.stringify(geoData, null, 2));
+            console.log('geoData.json generated successfully!');
+          }
+
+          main();
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geoData
+          path: geoData.json
