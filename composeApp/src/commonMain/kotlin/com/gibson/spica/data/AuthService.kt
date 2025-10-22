@@ -11,9 +11,7 @@ object AuthService {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
-    /**
-     * Sign in user with email and password.
-     */
+    /** Sign in user with email and password. */
     fun signIn(
         email: String,
         password: String,
@@ -21,17 +19,12 @@ object AuthService {
     ) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    onResult(true, null)
-                } else {
-                    onResult(false, task.exception?.message)
-                }
+                if (task.isSuccessful) onResult(true, null)
+                else onResult(false, task.exception?.message)
             }
     }
 
-    /**
-     * Sign up new user with email and password.
-     */
+    /** Sign up new user with email and password. */
     fun signUp(
         email: String,
         password: String,
@@ -39,23 +32,16 @@ object AuthService {
     ) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    onResult(true, null)
-                } else {
-                    onResult(false, task.exception?.message)
-                }
+                if (task.isSuccessful) onResult(true, null)
+                else onResult(false, task.exception?.message)
             }
     }
 
-    /**
-     * Logs the user out.
-     */
+    /** Logs the user out. */
     fun signOut() {
         auth.signOut()
     }
 
-    /**
-     * Returns the current Firebase user, or null if not logged in.
-     */
+    /** Returns the current Firebase user, or null if not logged in. */
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 }
