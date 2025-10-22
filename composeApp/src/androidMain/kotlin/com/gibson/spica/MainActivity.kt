@@ -6,27 +6,28 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.gibson.spica.navigation.AppNavigation
 import com.google.firebase.FirebaseApp
-import com.google.firebase.analytics.ktx.analytics
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.gibson.spica.ui.theme.SpicaTheme
 
+/**
+ * Main entry point for the SPICA Android app.
+ * Initializes Firebase and sets up the Compose navigation.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize Firebase
+
+        // ✅ Initialize Firebase
         FirebaseApp.initializeApp(this)
-        // Optionally get analytics instance early
-        val analytics = Firebase.analytics
+
+        // ✅ Initialize Firebase Analytics (no .ktx)
+        val analytics = FirebaseAnalytics.getInstance(this)
+
+        // ✅ Set up Compose UI
         setContent {
-            SpicaTheme (isDarkTheme = isSystemInDarkTheme()){
+            SpicaTheme(isDarkTheme = isSystemInDarkTheme()) {
                 AppNavigation()
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    AppNavigation()
 }
