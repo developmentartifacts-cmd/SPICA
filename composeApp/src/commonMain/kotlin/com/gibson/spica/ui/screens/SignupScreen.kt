@@ -7,88 +7,67 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
 import com.gibson.spica.viewmodel.AuthViewModel
 
-/**
- * Signup screen for SPICA — Firebase Authentication integration.
- */
 @Composable
-fun SignupScreen(viewModel: AuthViewModel = viewModel()) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+fun SignupScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
 
-    val user = viewModel.user
-    val loading = viewModel.loading
-    val error = viewModel.errorMessage
-
-    // ✅ Navigate to Home if registration is successful
-    if (user != null) {
-        Router.navigate(Screen.Home.route)
-        return
-    }
+    val email = viewModel.email
+    val password = viewModel.password
+    val isLoading = viewModel.isLoading
+    val errorMessage = viewModel.errorMessage
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Create your SPICA Account 🌱",
-                style = MaterialTheme.typography.headlineSmall
-            )
 
-            Spacer(Modifier.height(20.dp))
+            Text(text = "Create Account", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = viewModel::onEmailChange,
                 label = { Text("Email") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = viewModel::onPasswordChange,
                 label = { Text("Password") },
-                singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(24.dp))
 
+            if (errorMessage != null) {
+                Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(12.dp))
+            }
+
             Button(
-                onClick = { viewModel.signUp(email, password) },
-                enabled = !loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                onClick = { viewModel.signup() },
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (loading) "Creating Account..." else "Sign Up")
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            TextButton(onClick = { Router.navigate(Screen.Login.route) }) {
-                Text("Already have an account? Log in")
-            }
-
-            // Error message
-            if (error != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Sign Up")
+                }
             }
         }
     }
