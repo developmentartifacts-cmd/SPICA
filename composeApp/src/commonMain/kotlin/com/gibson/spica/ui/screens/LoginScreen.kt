@@ -1,17 +1,22 @@
 package com.gibson.spica.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.AuthViewModel
+import com.gibson.spica.navigation.Router
+import com.gibson.spica.navigation.Screen
 
 @Composable
 fun LoginScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
-
     val email = viewModel.email
     val password = viewModel.password
     val isLoading = viewModel.isLoading
@@ -20,13 +25,31 @@ fun LoginScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "Welcome Back",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            )
 
-            Text(text = "Welcome Back", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Login to continue your SPICA journey.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onBackground
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(32.dp))
 
             OutlinedTextField(
                 value = email,
@@ -50,7 +73,11 @@ fun LoginScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.
             Spacer(Modifier.height(24.dp))
 
             if (errorMessage != null) {
-                Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
                 Spacer(Modifier.height(12.dp))
             }
 
@@ -62,12 +89,30 @@ fun LoginScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.
                 if (isLoading) {
                     CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
                     )
                 } else {
                     Text("Login")
                 }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Don’t have an account?",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Sign up now",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        Router.navigate(Screen.Signup.route)
+                    }
+                )
             }
         }
     }
