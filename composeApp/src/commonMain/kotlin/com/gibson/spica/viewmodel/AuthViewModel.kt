@@ -1,76 +1,59 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.gibson.spica.data.AuthService
-import com.google.firebase.auth.FirebaseUser
+import com.gibson.spica.navigation.Router
+import com.gibson.spica.navigation.Screen
 
 /**
- * ViewModel that manages authentication state and actions for SPICA.
- * Keeps track of the logged-in user, loading states, and errors.
+ * ViewModel for handling authentication logic (signup & login).
  */
 class AuthViewModel : ViewModel() {
 
-    // Firebase user (null if not signed in)
-    var user: FirebaseUser? by mutableStateOf(AuthService.getCurrentUser())
-        private set
-
-    // Loading indicator for UI
-    var loading by mutableStateOf(false)
-        private set
-
-    // Authentication error message
+    var email by mutableStateOf("")
+    var password by mutableStateOf("")
+    var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
-        private set
 
-    /**
-     * Sign in user with email and password.
-     */
-    fun signIn(email: String, password: String) {
-        loading = true
+    fun onEmailChange(newValue: String) {
+        email = newValue
+    }
+
+    fun onPasswordChange(newValue: String) {
+        password = newValue
+    }
+
+    fun login() {
+        isLoading = true
         errorMessage = null
-
         AuthService.signIn(email, password) { success, error ->
-            loading = false
+            isLoading = false
             if (success) {
-                user = AuthService.getCurrentUser()
+                Router.navigate(Screen.Home.route)
             } else {
-                errorMessage = error ?: "Sign in failed"
+                errorMessage = error ?: "Login failed"
             }
         }
     }
 
-    /**
-     * Register new user with email and password.
-     */
-    fun signUp(email: String, password: String) {
-        loading = true
+    fun signup() {
+        isLoading = true
         errorMessage = null
-
         AuthService.signUp(email, password) { success, error ->
-            loading = false
+            isLoading = false
             if (success) {
-                user = AuthService.getCurrentUser()
+                Router.navigate(Screen.AccountSetup.route)
             } else {
-                errorMessage = error ?: "Sign up failed"
+                errorMessage = error ?: "Signup failed"
             }
         }
     }
 
-    /**
-     * Sign out from Firebase.
-     */
-    fun signOut() {
+    fun logout() {
         AuthService.signOut()
-        user = null
-    }
-
-    /**
-     * Refresh current user (for auto-login or token update).
-     */
-    fun refreshUser() {
-        user = AuthService.getCurrentUser()
+        Router.navigate(Screen.Login.route)
     }
 }
