@@ -16,6 +16,10 @@ sealed class Screen(val route: String) {
     object Watchlist : Screen("watchlist")
 
     companion object {
+        /**
+         * Converts a string route back to a Screen object.
+         * Helpful for restoring or checking route states.
+         */
         fun fromRoute(route: String?): Screen? = when (route) {
             Signup.route -> Signup
             Login.route -> Login
