@@ -7,69 +7,48 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.gibson.spica.data.AuthService
 import com.gibson.spica.ui.AppNavBar
 import com.gibson.spica.ui.screens.*
 
-/**
- * Android actual implementation of AppNavigation.
- * - Hides bottom nav when unauthenticated (Login/Signup)
- * - Shows bottom nav only when user is logged in
- * - Handles Android back button
- */
 @Composable
 actual fun AppNavigation() {
     val current = Router.currentRoute
-    val user = AuthService.getCurrentUser()
 
-    // ✅ Android back button: only active when not on Home
-    BackHandler(enabled = current != Screen.Home.route && user != null) {
+    BackHandler(enabled = current != Screen.Home.route) {
         Router.navigate(Screen.Home.route)
     }
 
-    // ✅ Authenticated layout uses Scaffold (bottom nav)
-    if (user != null) {
-        Scaffold(
-            bottomBar = {
+    Scaffold(
+        bottomBar = {
+            if (current !in listOf(Screen.Login.route, Screen.Signup.route, Screen.EmailVerify.route,
+                    Screen.AccountSetup.route, Screen.PhoneVerify.route)) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .padding(bottom = 5.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    AppNavBar(
-                        currentRoute = current,
-                        onItemClick = { route -> Router.navigate(route) }
-                    )
-                }
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                when (current) {
-                    Screen.Home.route -> HomeScreen()
-                    Screen.Marketplace.route -> MarketplaceScreen()
-                    Screen.Portfolio.route -> PortfolioScreen()
-                    Screen.Watchlist.route -> WatchlistScreen()
-                    else -> HomeScreen()
+                    AppNavBar(currentRoute = current, onItemClick = { route -> Router.navigate(route) })
                 }
             }
         }
-    } else {
-        // ✅ Unauthenticated screens: full screen, no nav bar
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
             when (current) {
                 Screen.Signup.route -> SignupScreen()
-                else -> LoginScreen() // default unauthenticated
+                Screen.Login.route -> LoginScreen()
+                Screen.EmailVerify.route -> EmailVerifyScreen()
+                Screen.AccountSetup.route -> AccountSetupScreen()
+                Screen.PhoneVerify.route -> PhoneVerifyScreen()
+                Screen.Home.route -> HomeScreen()
+                Screen.Marketplace.route -> MarketplaceScreen()
+                Screen.Portfolio.route -> PortfolioScreen()
+                Screen.Watchlist.route -> WatchlistScreen()
             }
         }
     }
