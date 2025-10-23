@@ -1,119 +1,88 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.gibson.spica.viewmodel.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 
 @Composable
-fun SignupScreen(viewModel: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
-    val email = viewModel.email
-    val password = viewModel.password
-    val isLoading = viewModel.isLoading
-    val errorMessage = viewModel.errorMessage
+fun SignupScreen() {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    val auth = FirebaseAuth.getInstance()
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(24.dp)
         ) {
-            Text(
-                text = "Create Account",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "Join SPICA today and unlock your portfolio universe.",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(32.dp))
+            Text("Create Account", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = email,
-                onValueChange = viewModel::onEmailChange,
-                label = { Text("Email") },
-                singleLine = true,
+                value = email, onValueChange = { email = it },
+                label = { Text("Email") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = password, onValueChange = { password = it },
+                label = { Text("Password") }, singleLine = true,
+                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = confirmPassword, onValueChange = { confirmPassword = it },
+                label = { Text("Confirm Password") }, singleLine = true,
+                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = viewModel::onPasswordChange,
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            if (errorMessage != null) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(Modifier.height(12.dp))
-            }
-
             Button(
-                onClick = { viewModel.signup() },
-                enabled = !isLoading,
+                onClick = {
+                    if (password != confirmPassword) {
+                        message = "Passwords do not match."
+                        return@Button
+                    }
+                    loading = true
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            loading = false
+                            if (task.isSuccessful) {
+                                auth.currentUser?.sendEmailVerification()
+                                message = "Account created. Please verify your email."
+                                Router.navigate(Screen.EmailVerify.route)
+                            } else {
+                                message = task.exception?.message
+                            }
+                        }
+                },
+                enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(20.dp)
-                    )
-                } else {
-                    Text("Sign Up")
-                }
+                Text(if (loading) "Creating..." else "Sign Up")
             }
 
-            Spacer(Modifier.height(24.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Already have an account?",
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "Login",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        Router.navigate(Screen.Login.route)
-                    }
-                )
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = { Router.navigate(Screen.Login.route) }) {
+                Text("Already have an account? Log in")
             }
+
+            message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         }
     }
 }
