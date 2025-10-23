@@ -1,51 +1,57 @@
 package com.gibson.spica.data
 
-import androidx.activity.ComponentActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FirebaseFirestore
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
+import com.google.firebase.auth.UserProfileChangeRequest
+import android.app.Activity
 
 object AuthService {
-    var currentActivity: ComponentActivity? = null
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    var currentActivity: Activity? = null
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    /**
-     * Decides where to send user when app starts.
-     */
-    fun handleInitialRoute() {
-        val user = getCurrentUser()
-        if (user == null) {
-            Router.resetTo(Screen.Login.route)
-            return
-        }
+    fun isLoggedIn(): Boolean = auth.currentUser != null
 
-        // Check email verification
-        if (!user.isEmailVerified) {
-            Router.resetTo(Screen.EmailVerify.route)
-            return
-        }
-
-        // Check account setup in Firestore
-        db.collection("users").document(user.uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    val phoneVerified = doc.getBoolean("phoneVerified") ?: false
-                    if (phoneVerified) {
-                        Router.resetTo(Screen.Home.route)
-                    } else {
-                        Router.resetTo(Screen.PhoneVerify.route)
-                    }
+    fun signIn(
+        email: String,
+        password: String,
+        onResult: (success: Boolean, error: String?) -> Unit
+    ) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    onResult(true, null)
                 } else {
-                    Router.resetTo(Screen.AccountSetup.route)
+                    onResult(false, task.exception?.message)
                 }
             }
-            .addOnFailureListener {
-                Router.resetTo(Screen.Login.route)
+    }
+
+    fun signUp(
+        email: String,
+        password: String,
+        onResult: (success: Boolean, error: String?) -> Unit
+    ) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    user?.sendEmailVerification()
+                    onResult(true, null)
+                } else {
+                    onResult(false, task.exception?.message)
+                }
             }
+    }
+
+    fun signOut(onResult: (Boolean) -> Unit = {}) {
+        try {
+            auth.signOut()
+            onResult(true)
+        } catch (e: Exception) {
+            onResult(false)
+        }
     }
 }
