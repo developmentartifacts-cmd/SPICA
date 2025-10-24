@@ -49,6 +49,7 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
+            implementation("androidx.compose.ui:ui-text:1.9.0")
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
         }
