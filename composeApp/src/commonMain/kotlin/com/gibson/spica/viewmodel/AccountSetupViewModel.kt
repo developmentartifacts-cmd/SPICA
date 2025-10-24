@@ -2,150 +2,121 @@ package com.gibson.spica.viewmodel
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
-import com.gibson.spica.data.AuthService
-import com.gibson.spica.data.FirestoreService
-import com.gibson.spica.model.UserProfile
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
-import com.google.firebase.firestore.QuerySnapshot
+
+data class AccountSetupState(
+    val firstName: String = "",
+    val secondName: String = "",
+    val lastName: String = "",
+    val username: String = "",
+    val usernameError: String? = null,
+    val country: String = "",
+    val state: String = "",
+    val town: String = "",
+    val postcode: String = "",
+    val phone: String = "",
+    val isLoading: Boolean = false,
+    val message: String? = null
+)
 
 class AccountSetupViewModel : ViewModel() {
 
-    // Form fields
-    var firstName by mutableStateOf("")
-    var secondName by mutableStateOf("")
-    var lastName by mutableStateOf("")
-    var username by mutableStateOf("")
-    var country by mutableStateOf("")
-    var state by mutableStateOf("")
-    var town by mutableStateOf("")
-    var postcode by mutableStateOf("")
-    var phoneNumber by mutableStateOf("")
+    var state by mutableStateOf(AccountSetupState())
+        private set
 
-    // UI state
-    var isLoading by mutableStateOf(false)
-    var errorMessage by mutableStateOf<String?>(null)
-    var successMessage by mutableStateOf<String?>(null)
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
-    // Selectors
-    val countries = listOf("Nigeria", "United States", "United Kingdom")
-    val states = mapOf(
-        "Nigeria" to listOf("Lagos", "Abuja", "Enugu", "Kano"),
-        "United States" to listOf("California", "Texas", "New York"),
-        "United Kingdom" to listOf("England", "Scotland", "Wales")
-    )
-    val towns = mapOf(
-        "Enugu" to listOf("Nsukka" to "410001", "Enugu" to "400001"),
-        "Lagos" to listOf("Ikeja" to "100001", "Lekki" to "105102"),
-        "California" to listOf("Los Angeles" to "90001", "San Francisco" to "94101"),
-        "England" to listOf("London" to "E1", "Manchester" to "M1")
-    )
+    val countryList = listOf("Nigeria", "Ghana", "Kenya", "South Africa", "USA")
 
-    fun onCountryChange(value: String) {
-        country = value
-        state = ""
-        town = ""
-        postcode = ""
+    fun getStatesForCountry(country: String): List<String> = when (country) {
+        "Nigeria" -> listOf("Lagos", "Abuja", "Anambra", "Enugu", "Kano")
+        "Ghana" -> listOf("Accra", "Kumasi", "Tamale")
+        "Kenya" -> listOf("Nairobi", "Mombasa", "Kisumu")
+        "South Africa" -> listOf("Gauteng", "KwaZulu-Natal", "Western Cape")
+        "USA" -> listOf("California", "Texas", "New York")
+        else -> emptyList()
     }
 
-    fun onStateChange(value: String) {
-        state = value
-        town = ""
-        postcode = ""
+    fun getTownsForState(state: String): List<String> = when (state) {
+        "Lagos" -> listOf("Ikeja", "Surulere", "Lekki", "Epe")
+        "Abuja" -> listOf("Garki", "Wuse", "Asokoro")
+        "Anambra" -> listOf("Awka", "Onitsha", "Nnewi")
+        "Enugu" -> listOf("Nsukka", "Enugu East", "Agbani")
+        "Kano" -> listOf("Kano City", "Tarauni", "Fagge")
+        else -> listOf("General City 1", "General City 2")
     }
 
-    fun onTownChange(value: String, code: String) {
-        town = value
-        postcode = code
-    }
+    fun updateFirstName(value: String) { state = state.copy(firstName = value) }
+    fun updateSecondName(value: String) { state = state.copy(secondName = value) }
+    fun updateLastName(value: String) { state = state.copy(lastName = value) }
+    fun updateUsername(value: String) { state = state.copy(username = value, usernameError = null) }
+    fun updateCountry(value: String) { state = state.copy(country = value, state = "", town = "") }
+    fun updateState(value: String) { state = state.copy(state = value, town = "") }
+    fun updateTown(value: String) { state = state.copy(town = value) }
+    fun updatePostcode(value: String) { state = state.copy(postcode = value) }
+    fun updatePhone(value: String) { state = state.copy(phone = value) }
 
-    private fun validateFields(): Boolean {
-        if (firstName.isBlank() || lastName.isBlank() || username.isBlank()
-            || country.isBlank() || state.isBlank() || town.isBlank() || postcode.isBlank()
+    fun submitAccountSetup() {
+        if (state.firstName.isBlank() || state.lastName.isBlank() || state.username.isBlank()
+            || state.country.isBlank() || state.state.isBlank() || state.town.isBlank() || state.postcode.isBlank()
         ) {
-            errorMessage = "Please fill all required fields."
-            return false
-        }
-        return true
-    }
-
-    private fun checkUsernameUnique(onResult: (Boolean, String?) -> Unit) {
-        FirestoreService.getCollection("users")
-            .whereEqualTo("username", username)
-            .get()
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val result: QuerySnapshot? = task.result
-                    if (result != null && !result.isEmpty) {
-                        onResult(false, "Username already exists.")
-                    } else {
-                        onResult(true, null)
-                    }
-                } else {
-                    onResult(false, task.exception?.message)
-                }
-            }
-    }
-
-    fun saveProfile() {
-        if (!validateFields()) return
-        val user = AuthService.getCurrentUser() ?: run {
-            errorMessage = "No authenticated user."
+            state = state.copy(message = "Please fill all required (*) fields.")
             return
         }
 
-        isLoading = true
-        errorMessage = null
-        successMessage = null
+        state = state.copy(isLoading = true, message = null)
 
-        checkUsernameUnique { unique, error ->
-            if (!unique) {
-                isLoading = false
-                errorMessage = error
-                return@checkUsernameUnique
-            }
-
-            val profile = UserProfile(
-                firstName = firstName,
-                secondName = secondName,
-                lastName = lastName,
-                username = username,
-                country = country,
-                state = state,
-                townOrCity = town,
-                postcode = postcode,
-                phoneNumber = phoneNumber,
-                phoneVerified = false,
-                emailVerified = user.isEmailVerified
-            )
-
-            FirestoreService.setDocument("users", user.uid, profileToMap(profile)) { success, err ->
-                isLoading = false
-                if (success) {
-                    successMessage = "Profile saved successfully."
-                    if (phoneNumber.isNotBlank()) {
-                        Router.navigate(Screen.PhoneVerify.route)
-                    } else {
-                        Router.navigate(Screen.Home.route)
-                    }
+        // Check username uniqueness
+        firestore.collection("users")
+            .whereEqualTo("username", state.username)
+            .get()
+            .addOnSuccessListener { query ->
+                if (!query.isEmpty) {
+                    state = state.copy(
+                        usernameError = "Username already taken.",
+                        isLoading = false
+                    )
                 } else {
-                    errorMessage = err ?: "Failed to save profile."
+                    saveUserInfo()
                 }
             }
-        }
+            .addOnFailureListener {
+                state = state.copy(message = "Error checking username: ${it.message}", isLoading = false)
+            }
     }
 
-    private fun profileToMap(p: UserProfile): Map<String, Any> = mapOf(
-        "firstName" to p.firstName,
-        "secondName" to p.secondName,
-        "lastName" to p.lastName,
-        "username" to p.username,
-        "country" to p.country,
-        "state" to p.state,
-        "townOrCity" to p.townOrCity,
-        "postcode" to p.postcode,
-        "phoneNumber" to p.phoneNumber,
-        "phoneVerified" to p.phoneVerified,
-        "emailVerified" to p.emailVerified
-    )
+    private fun saveUserInfo() {
+        val user = auth.currentUser ?: return
+        val userData = hashMapOf(
+            "uid" to user.uid,
+            "firstName" to state.firstName,
+            "secondName" to state.secondName,
+            "lastName" to state.lastName,
+            "username" to state.username,
+            "country" to state.country,
+            "state" to state.state,
+            "town" to state.town,
+            "postcode" to state.postcode,
+            "phone" to state.phone,
+            "email" to user.email
+        )
+
+        firestore.collection("users").document(user.uid)
+            .set(userData)
+            .addOnSuccessListener {
+                state = state.copy(isLoading = false, message = "Account setup completed.")
+                Router.navigate(Screen.PhoneVerify.route)
+            }
+            .addOnFailureListener {
+                state = state.copy(isLoading = false, message = "Failed to save data: ${it.message}")
+            }
+    }
+
+    fun skipPhoneVerification() {
+        Router.navigate(Screen.Home.route)
+    }
 }
