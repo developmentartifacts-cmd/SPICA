@@ -1,92 +1,93 @@
 package com.gibson.spica.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.PhoneVerifyViewModel
 
 @Composable
-fun PhoneVerifyScreen(viewModel: PhoneVerifyViewModel = viewModel()) {
-    val isSending = viewModel.isSending
-    val isVerifying = viewModel.isVerifying
-    val error = viewModel.errorMessage
-    val success = viewModel.successMessage
+fun PhoneVerifyScreen(viewModel: PhoneVerifyViewModel = remember { PhoneVerifyViewModel() }) {
+    val state = viewModel.state
+    val scaffoldState = rememberScaffoldState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                "Phone Verification",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.height(24.dp))
-
-            OutlinedTextField(
-                value = viewModel.phoneNumber,
-                onValueChange = { viewModel.phoneNumber = it },
-                label = { Text("Phone Number") },
-                enabled = !isSending && !isVerifying,
-                singleLine = true,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Button(
-                onClick = { viewModel.sendCode() },
-                enabled = !isSending,
-                modifier = Modifier.fillMaxWidth()
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(if (isSending) "Sending..." else "Send Code")
-            }
+                Text(
+                    "Phone Verification",
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-            Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = state.phoneNumber,
+                    onValueChange = { viewModel.updatePhoneNumber(it) },
+                    label = { Text("Phone Number (+234...)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
 
-            OutlinedTextField(
-                value = viewModel.code,
-                onValueChange = { viewModel.code = it },
-                label = { Text("Verification Code") },
-                singleLine = true,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
+                if (!state.codeSent) {
+                    Button(
+                        onClick = { viewModel.sendVerificationCode() },
+                        enabled = !state.isLoading && state.phoneNumber.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (state.isLoading) "Sending..." else "Send Verification Code")
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = state.verificationCode,
+                        onValueChange = { viewModel.updateVerificationCode(it) },
+                        label = { Text("Enter Verification Code") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
 
-            Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.verifyCode() },
+                        enabled = !state.isLoading && state.verificationCode.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (state.isLoading) "Verifying..." else "Verify Code")
+                    }
 
-            Button(
-                onClick = { viewModel.verifyCode() },
-                enabled = !isVerifying,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isVerifying) "Verifying..." else "Verify")
-            }
+                    TextButton(onClick = { viewModel.resendCode() }) {
+                        Text("Resend Code")
+                    }
+                }
 
-            Spacer(Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            if (error != null) {
-                Text(error, color = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.height(8.dp))
-            }
+                TextButton(onClick = { viewModel.skipVerification() }) {
+                    Text("Skip Phone Verification")
+                }
 
-            if (success != null) {
-                Text(success, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(8.dp))
-            }
-
-            TextButton(onClick = { viewModel.skip() }) {
-                Text("Skip verification → Continue to Home")
+                if (state.message != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.message!!,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
         }
     }
