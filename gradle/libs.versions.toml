@@ -61,6 +61,12 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 firebase-inappmessaging-display = { group = "com.google.firebase", name = "firebase-inappmessaging-display", version.ref = "firebaseInappmessagingDisplay" }
 firebase-config = { group = "com.google.firebase", name = "firebase-config", version.ref = "firebaseConfig" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
+# Compose Core
+compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeMultiplatform" }
+compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "composeMultiplatform" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMultiplatform" }
+compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "composeMultiplatform" }
+compose-materialIconsExtended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "composeMultiplatform" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
