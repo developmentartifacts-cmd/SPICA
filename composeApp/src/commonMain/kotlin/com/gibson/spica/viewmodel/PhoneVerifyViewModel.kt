@@ -4,107 +4,143 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.*
-import com.google.firebase.firestore.FirebaseFirestore
-import com.gibson.spica.data.AuthService
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 import java.util.concurrent.TimeUnit
 
+data class PhoneVerifyState(
+    val phoneNumber: String = "",
+    val verificationCode: String = "",
+    val isLoading: Boolean = false,
+    val codeSent: Boolean = false,
+    val verificationId: String? = null,
+    val message: String? = null
+)
+
 class PhoneVerifyViewModel : ViewModel() {
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    var verificationId by mutableStateOf<String?>(null)
-    var code by mutableStateOf("")
-    var phoneNumber by mutableStateOf("")
-    var isSending by mutableStateOf(false)
-    var isVerifying by mutableStateOf(false)
-    var errorMessage by mutableStateOf<String?>(null)
-    var successMessage by mutableStateOf<String?>(null)
+    var state by mutableStateOf(PhoneVerifyState())
+        private set
 
-    fun initPhone(number: String) {
-        phoneNumber = number
+    private val auth = FirebaseAuth.getInstance()
+    private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
+
+    fun updatePhoneNumber(value: String) {
+        state = state.copy(phoneNumber = value)
     }
 
-    fun sendCode() {
-        if (phoneNumber.isBlank()) {
-            errorMessage = "Phone number cannot be empty."
+    fun updateVerificationCode(value: String) {
+        state = state.copy(verificationCode = value)
+    }
+
+    fun sendVerificationCode() {
+        if (state.phoneNumber.isBlank()) {
+            state = state.copy(message = "Please enter a valid phone number.")
             return
         }
-        isSending = true
-        errorMessage = null
-        successMessage = null
 
-        val activity = AuthService.currentActivity ?: return
+        state = state.copy(isLoading = true, message = null)
+
+        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                signInWithPhoneAuthCredential(credential)
+            }
+
+            override fun onVerificationFailed(e: FirebaseException) {
+                state = state.copy(isLoading = false, message = "Verification failed: ${e.message}")
+            }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: PhoneAuthProvider.ForceResendingToken
+            ) {
+                state = state.copy(
+                    isLoading = false,
+                    codeSent = true,
+                    verificationId = verificationId,
+                    message = "Code sent successfully."
+                )
+                resendToken = token
+            }
+        }
 
         val options = PhoneAuthOptions.newBuilder(auth)
-            .setPhoneNumber(phoneNumber)
+            .setPhoneNumber(state.phoneNumber)
             .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
-            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    verifyWithCredential(credential)
-                }
-
-                override fun onVerificationFailed(e: FirebaseException) {
-                    isSending = false
-                    errorMessage = e.message
-                }
-
-                override fun onCodeSent(verificationId: String, token: PhoneAuthProvider.ForceResendingToken) {
-                    isSending = false
-                    successMessage = "Verification code sent."
-                    this@PhoneVerifyViewModel.verificationId = verificationId
-                }
-            })
+            .setActivity(Router.currentActivity!!)
+            .setCallbacks(callbacks)
             .build()
 
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
     fun verifyCode() {
-        val id = verificationId ?: run {
-            errorMessage = "No verification ID found."
+        val verificationId = state.verificationId
+        if (verificationId == null) {
+            state = state.copy(message = "No verification ID found. Please resend code.")
             return
         }
-        if (code.isBlank()) {
-            errorMessage = "Please enter the verification code."
-            return
-        }
-        isVerifying = true
-        errorMessage = null
 
-        val credential = PhoneAuthProvider.getCredential(id, code)
-        verifyWithCredential(credential)
+        val credential = PhoneAuthProvider.getCredential(verificationId, state.verificationCode)
+        signInWithPhoneAuthCredential(credential)
     }
 
-    private fun verifyWithCredential(credential: PhoneAuthCredential) {
-        auth.signInWithCredential(credential)
-            .addOnCompleteListener { task ->
-                isVerifying = false
+    private fun signInWithPhoneAuthCredential(credential: PhoneAuthCredential) {
+        state = state.copy(isLoading = true)
+        auth.currentUser?.linkWithCredential(credential)
+            ?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    markPhoneVerified()
+                    state = state.copy(isLoading = false, message = "Phone verified successfully!")
+                    Router.navigate(Screen.Home.route)
                 } else {
-                    errorMessage = task.exception?.message ?: "Verification failed."
+                    state = state.copy(isLoading = false, message = "Error: ${task.exception?.message}")
                 }
             }
     }
 
-    private fun markPhoneVerified() {
-        val user = AuthService.getCurrentUser() ?: return
-        val data = mapOf("phoneVerified" to true)
-        db.collection("users").document(user.uid)
-            .update(data)
-            .addOnSuccessListener {
-                successMessage = "Phone verified successfully."
-                Router.navigate(Screen.Home.route)
+    fun resendCode() {
+        val phoneNumber = state.phoneNumber
+        val token = resendToken
+        if (phoneNumber.isBlank() || token == null) {
+            state = state.copy(message = "Cannot resend yet. Try sending code again.")
+            return
+        }
+
+        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                signInWithPhoneAuthCredential(credential)
             }
-            .addOnFailureListener { e ->
-                errorMessage = e.message
+
+            override fun onVerificationFailed(e: FirebaseException) {
+                state = state.copy(isLoading = false, message = "Verification failed: ${e.message}")
             }
+
+            override fun onCodeSent(
+                verificationId: String,
+                token: PhoneAuthProvider.ForceResendingToken
+            ) {
+                state = state.copy(
+                    isLoading = false,
+                    codeSent = true,
+                    verificationId = verificationId,
+                    message = "Code resent successfully."
+                )
+                resendToken = token
+            }
+        }
+
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(Router.currentActivity!!)
+            .setCallbacks(callbacks)
+            .setForceResendingToken(token)
+            .build()
+
+        PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
-    fun skip() {
+    fun skipVerification() {
         Router.navigate(Screen.Home.route)
     }
 }
