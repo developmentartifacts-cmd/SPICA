@@ -8,117 +8,66 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.data.AuthService
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
-import com.google.firebase.auth.FirebaseAuth
+import com.gibson.spica.viewmodel.EmailVerifyViewModel
 
 @Composable
-fun EmailVerifyScreen() {
-    val auth = remember { FirebaseAuth.getInstance() }
-    var isVerified by remember { mutableStateOf(auth.currentUser?.isEmailVerified ?: false) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var isSending by remember { mutableStateOf(false) }
+fun EmailVerifyScreen(viewModel: EmailVerifyViewModel = remember { EmailVerifyViewModel() }) {
+    val state = viewModel.state
 
-    // Refresh user state each time screen is opened
-    LaunchedEffect(Unit) {
-        auth.currentUser?.reload()
-        isVerified = auth.currentUser?.isEmailVerified ?: false
-    }
-
-    if (isVerified) {
-        Router.navigate(Screen.AccountSetup.route)
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Scaffold(
+        modifier = Modifier.fillMaxSize()
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Verify Your Email",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "We've sent a verification link to your email.\nPlease check your inbox and click the link.",
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                lineHeight = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = {
-                    val user = auth.currentUser
-                    if (user != null && !isSending) {
-                        isSending = true
-                        user.sendEmailVerification()
-                            .addOnCompleteListener { task ->
-                                isSending = false
-                                message = if (task.isSuccessful) {
-                                    "Verification email sent successfully."
-                                } else {
-                                    "Failed to send verification email: ${task.exception?.message}"
-                                }
-                            }
-                    } else {
-                        message = "User not found or already verified."
-                    }
-                },
-                enabled = !isSending,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(if (isSending) "Sending..." else "Resend Email")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    auth.currentUser?.reload()?.addOnCompleteListener {
-                        isVerified = auth.currentUser?.isEmailVerified ?: false
-                        if (isVerified) {
-                            Router.navigate(Screen.AccountSetup.route)
-                        } else {
-                            message = "Email not verified yet. Please check again."
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("I've Verified My Email")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(
-                onClick = {
-                    AuthService.signOut {
-                        Router.navigate(Screen.Login.route)
-                    }
-                }
-            ) {
-                Text("Back to Login", color = MaterialTheme.colorScheme.error)
-            }
-
-            if (message != null) {
-                Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    text = message ?: "",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 14.sp
+                    "Verify Your Email",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
+
+                Text(
+                    "A verification link has been sent to your registered email.\nPlease check your inbox and click the link to verify your account.",
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Button(
+                    onClick = { viewModel.checkVerificationStatus() },
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (state.isLoading) "Checking..." else "Check Verification Status")
+                }
+
+                Button(
+                    onClick = { viewModel.resendVerificationEmail() },
+                    enabled = !state.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (state.isLoading) "Resending..." else "Resend Verification Email")
+                }
+
+                TextButton(onClick = { viewModel.skipVerification() }) {
+                    Text("Skip (Continue Anyway)")
+                }
+
+                if (state.message != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.message!!,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
         }
     }
