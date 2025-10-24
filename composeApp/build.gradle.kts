@@ -44,7 +44,11 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
-            
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
+            implementation(compose.ui)
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
         }
@@ -54,7 +58,6 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
-            implementation("androidx.compose.ui:ui-text:1.9.0")
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
