@@ -1,13 +1,13 @@
 package com.gibson.spica.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.AccountSetupViewModel
@@ -71,22 +71,22 @@ fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetu
                     }
                 )
 
-                // --- Country, State, Town ---
-                DropdownMenuBox(
+                // --- Country, State, Town Dropdowns ---
+                DropdownSelector(
                     label = "Country *",
                     options = viewModel.countryList,
                     selected = state.country,
                     onSelect = { viewModel.updateCountry(it) }
                 )
 
-                DropdownMenuBox(
+                DropdownSelector(
                     label = "State *",
                     options = viewModel.getStatesForCountry(state.country),
                     selected = state.state,
                     onSelect = { viewModel.updateState(it) }
                 )
 
-                DropdownMenuBox(
+                DropdownSelector(
                     label = "Town / City *",
                     options = viewModel.getTownsForState(state.state),
                     selected = state.town,
@@ -119,9 +119,7 @@ fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetu
                     Text(if (state.isLoading) "Saving..." else "Continue")
                 }
 
-                TextButton(
-                    onClick = { viewModel.skipPhoneVerification() }
-                ) {
+                TextButton(onClick = { viewModel.skipPhoneVerification() }) {
                     Text("Skip Phone Verification")
                 }
 
@@ -135,13 +133,14 @@ fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetu
 }
 
 @Composable
-fun DropdownMenuBox(
+fun DropdownSelector(
     label: String,
     options: List<String>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+
     Column {
         OutlinedTextField(
             value = selected,
@@ -152,18 +151,27 @@ fun DropdownMenuBox(
                 .fillMaxWidth()
                 .clickable { expanded = true }
         )
+
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
         ) {
-            options.forEach { item ->
+            if (options.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text(item) },
-                    onClick = {
-                        onSelect(item)
-                        expanded = false
-                    }
+                    text = { Text("No options available") },
+                    onClick = { expanded = false }
                 )
+            } else {
+                options.forEach { item ->
+                    DropdownMenuItem(
+                        text = { Text(item) },
+                        onClick = {
+                            onSelect(item)
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }
