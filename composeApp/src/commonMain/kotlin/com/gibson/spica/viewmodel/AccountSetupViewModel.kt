@@ -5,8 +5,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class AccountSetupViewModel {
+
+    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     var state by mutableStateOf(AccountSetupState())
         private set
@@ -75,8 +82,8 @@ class AccountSetupViewModel {
 
         // pretend saving data (in real app, send to Firestore)
         state = state.copy(isLoading = true)
-        kotlinx.coroutines.GlobalScope.launch {
-            kotlinx.coroutines.delay(1200)
+        viewModelScope.launch {
+            delay(1200)
             state = state.copy(isLoading = false, message = "Account information saved successfully.")
             Router.navigate(Screen.PhoneVerify.route)
         }
