@@ -39,7 +39,7 @@ fun SignupScreen() {
             OutlinedTextField(
                 value = password, onValueChange = { password = it },
                 label = { Text("Password") }, singleLine = true,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
@@ -47,7 +47,7 @@ fun SignupScreen() {
             OutlinedTextField(
                 value = confirmPassword, onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password") }, singleLine = true,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
 
