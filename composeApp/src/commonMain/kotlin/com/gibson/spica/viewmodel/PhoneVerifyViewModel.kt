@@ -1,5 +1,6 @@
 package com.gibson.spica.viewmodel
 
+import android.app.Activity
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import com.google.firebase.FirebaseException
@@ -34,7 +35,10 @@ class PhoneVerifyViewModel : ViewModel() {
         state = state.copy(code = code)
     }
 
-    fun sendVerificationCode() {
+    /**
+     * Send verification code to user's phone
+     */
+    fun sendVerificationCode(activity: Activity) {
         val phone = state.phoneNumber.trim()
         if (phone.isEmpty()) {
             state = state.copy(message = "Please enter your phone number.")
@@ -46,9 +50,11 @@ class PhoneVerifyViewModel : ViewModel() {
         val options = PhoneAuthOptions.newBuilder(auth)
             .setPhoneNumber(phone)
             .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(null) // will be automatically attached on Android
+            .setActivity(activity)
             .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    // Auto verification on some devices
                     signInWithCredential(credential)
                 }
 
@@ -73,12 +79,15 @@ class PhoneVerifyViewModel : ViewModel() {
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
+    /**
+     * Verify code user entered
+     */
     fun verifyCode() {
         val id = state.verificationId
         val code = state.code.trim()
 
         if (id == null || code.isEmpty()) {
-            state = state.copy(message = "Enter the code you received.")
+            state = state.copy(message = "Please enter the verification code.")
             return
         }
 
@@ -88,21 +97,30 @@ class PhoneVerifyViewModel : ViewModel() {
         signInWithCredential(credential)
     }
 
+    /**
+     * Sign in user with verified phone credential
+     */
     private fun signInWithCredential(credential: PhoneAuthCredential) {
         auth.signInWithCredential(credential)
             .addOnCompleteListener { task ->
-                state = if (task.isSuccessful) {
-                    state.copy(isLoading = false, message = "Phone verified successfully!")
-                } else {
-                    state.copy(isLoading = false, message = "Error: ${task.exception?.message}")
-                }
-
                 if (task.isSuccessful) {
+                    state = state.copy(
+                        isLoading = false,
+                        message = "Phone verified successfully!"
+                    )
                     Router.navigate(Screen.Home.route)
+                } else {
+                    state = state.copy(
+                        isLoading = false,
+                        message = "Error: ${task.exception?.message}"
+                    )
                 }
             }
     }
 
+    /**
+     * Skip phone verification and proceed
+     */
     fun skipVerification() {
         Router.navigate(Screen.Home.route)
     }
