@@ -15,7 +15,7 @@ import com.gibson.spica.viewmodel.AccountSetupViewModel
 @Composable
 fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
     val state = viewModel.state
-    val SnackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
