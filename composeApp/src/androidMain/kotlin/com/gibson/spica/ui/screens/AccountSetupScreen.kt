@@ -15,11 +15,11 @@ import com.gibson.spica.viewmodel.AccountSetupViewModel
 @Composable
 fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
     val state = viewModel.state
-    val scaffoldState = rememberScaffoldState()
+    val SnackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
