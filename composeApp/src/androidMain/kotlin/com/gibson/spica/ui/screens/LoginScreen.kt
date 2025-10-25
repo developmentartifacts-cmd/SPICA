@@ -35,7 +35,7 @@ fun LoginScreen() {
             OutlinedTextField(
                 value = password, onValueChange = { password = it },
                 label = { Text("Password") }, singleLine = true,
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
 
