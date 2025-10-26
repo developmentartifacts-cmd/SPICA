@@ -11,10 +11,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import okio.FileSystem
-import okio.Path.Companion.toPath
+import android.content.Context
 
-class AccountSetupViewModel {
+class AccountSetupViewModel(private val context: Context) {
     var state by mutableStateOf(AccountSetupState())
         private set
 
@@ -28,22 +27,24 @@ class AccountSetupViewModel {
     private fun loadNigeriaData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Load JSON file from resources
-                val fileSystem = FileSystem.SYSTEM
-                val jsonPath = "composeApp/src/commonMain/resources/nigeria.json".toPath()
-                val jsonString = fileSystem.read(jsonPath) { readUtf8() }
+                // Load JSON from assets (Android)
+                val inputStream = context.assets.open("nigeria.json")
+                val jsonString = inputStream.bufferedReader().use { it.readText() }
 
                 val jsonElement = Json.parseToJsonElement(jsonString)
                 nigeriaData = jsonElement.jsonObject.mapValues { (_, value) ->
                     value.jsonArray.map { it.jsonPrimitive.content }
                 }
+
+                println("Loaded states: ${nigeriaData.keys}") // Debug log
+
             } catch (e: Exception) {
                 println("Error loading Nigeria data: ${e.message}")
             }
         }
     }
 
-    // Provide state list for dropdown
+    // Provide state list
     fun getStates(): List<String> = nigeriaData.keys.sorted()
 
     // Provide LGAs for selected state
