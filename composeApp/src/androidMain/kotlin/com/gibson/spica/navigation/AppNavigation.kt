@@ -50,7 +50,7 @@ actual fun AppNavigation() {
                 Screen.EmailVerify.route -> EmailVerifyScreen()
                 Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)
                 Screen.PhoneVerify.route -> PhoneVerifyScreen()
-                Screen.AccountSetupSuccess.route -> AccountSetupSuccessScreen(viewModel = sharedAccountSetupViewModel)
+                Screen.AccountSetupSuccess.route -> AccountSetupSuccessScreen()
                 Screen.Home.route -> HomeScreen()
                 Screen.Marketplace.route -> MarketplaceScreen()
                 Screen.Portfolio.route -> PortfolioScreen()
