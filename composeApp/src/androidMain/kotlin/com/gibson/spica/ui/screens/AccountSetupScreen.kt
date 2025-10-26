@@ -1,17 +1,17 @@
 package com.gibson.spica.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.clickable
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
@@ -141,14 +141,15 @@ fun StepNames(viewModel: AccountSetupViewModel) {
 fun StepLocation(viewModel: AccountSetupViewModel) {
     val state = viewModel.state
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        DropdownMenuBox(
+
+        SearchableDropdown(
             label = "State *",
             options = viewModel.getStates(),
             selected = state.state,
             onSelect = { viewModel.updateState(it) }
         )
 
-        DropdownMenuBox(
+        SearchableDropdown(
             label = "Town / LGA *",
             options = viewModel.getTowns(state.state),
             selected = state.town,
@@ -187,33 +188,41 @@ fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
 }
 
 @Composable
-fun DropdownMenuBox(
+fun SearchableDropdown(
     label: String,
     options: List<String>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredOptions = options.filter { it.contains(searchQuery, ignoreCase = true) }
 
     Column {
         OutlinedTextField(
-            value = selected,
-            onValueChange = {},
+            value = if (selected.isEmpty()) searchQuery else selected,
+            onValueChange = {
+                searchQuery = it
+                expanded = true
+            },
             label = { Text(label) },
-            readOnly = true,
+            readOnly = selected.isNotEmpty(),
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = true }
         )
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.heightIn(max = 200.dp) // Scrollable
         ) {
-            options.forEach { item ->
+            filteredOptions.forEach { item ->
                 DropdownMenuItem(
                     text = { Text(item) },
                     onClick = {
                         onSelect(item)
+                        searchQuery = ""
                         expanded = false
                     }
                 )
