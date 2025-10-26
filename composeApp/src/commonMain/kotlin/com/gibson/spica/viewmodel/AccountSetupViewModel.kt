@@ -1,68 +1,69 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class AccountSetupViewModel : ViewModel() {
 
+    // 🔹 Step 1: Name fields
     var firstName by mutableStateOf("")
-    var secondName by mutableStateOf("")
+    var middleName by mutableStateOf("")
     var lastName by mutableStateOf("")
-    var username by mutableStateOf("")
+
+    // 🔹 Step 2: Bio data
     var bio by mutableStateOf("")
+
+    // 🔹 Step 3: Phone picker fields
     var mobileNumber by mutableStateOf("")
-    var countryCode by mutableStateOf("")
     var countryName by mutableStateOf("")
+    var countryCode by mutableStateOf("")
 
-    var isLoading by mutableStateOf(false)
+    // 🔹 Step control
     var currentStep by mutableStateOf(1)
-    var showDialog by mutableStateOf(false)
-    var message by mutableStateOf<String?>(null)
+    val totalSteps = 3
 
-    private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
     fun nextStep() {
-        if (currentStep < 3) currentStep++
+        if (currentStep < totalSteps) currentStep++
     }
 
-    fun prevStep() {
+    fun previousStep() {
         if (currentStep > 1) currentStep--
     }
 
-    fun submitAccountSetup(onSuccess: () -> Unit) {
-        val userId = auth.currentUser?.uid ?: return
-        isLoading = true
+    fun reset() {
+        currentStep = 1
+        firstName = ""
+        middleName = ""
+        lastName = ""
+        bio = ""
+        mobileNumber = ""
+        countryName = ""
+        countryCode = ""
+    }
+
+    fun submitAccountSetup(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val userId = auth.currentUser?.uid ?: return onError("User not authenticated")
 
         val data = mapOf(
             "firstName" to firstName,
-            "secondName" to secondName,
+            "middleName" to middleName,
             "lastName" to lastName,
-            "username" to username,
             "bio" to bio,
             "mobileNumber" to mobileNumber,
-            "countryCode" to countryCode,
-            "countryName" to countryName
+            "countryName" to countryName,
+            "countryCode" to countryCode
         )
 
-        CoroutineScope(Dispatchers.IO).launch {
-            firestore.collection("users").document(userId)
-                .set(data)
-                .addOnSuccessListener {
-                    isLoading = false
-                    message = "Account setup successful!"
-                    showDialog = false
-                    onSuccess()
-                }
-                .addOnFailureListener {
-                    isLoading = false
-                    message = it.localizedMessage
-                }
-        }
+        firestore.collection("users").document(userId)
+            .set(data)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e.localizedMessage ?: "Unknown error") }
     }
 }
