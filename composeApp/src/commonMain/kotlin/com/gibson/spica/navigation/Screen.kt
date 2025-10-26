@@ -8,6 +8,7 @@ sealed class Screen(val route: String) {
     object Signup : Screen("signup")
     object Login : Screen("login")
     object AccountSetup : Screen("account_setup")
+    object AccountSetupSuccess : Screen("account_setup_success")
     object EmailVerify : Screen("email_verify")
     object PhoneVerify : Screen("phone_verify")
     object Home : Screen("home")
@@ -16,14 +17,11 @@ sealed class Screen(val route: String) {
     object Watchlist : Screen("watchlist")
 
     companion object {
-        /**
-         * Converts a string route back to a Screen object.
-         * Helpful for restoring or checking route states.
-         */
         fun fromRoute(route: String?): Screen? = when (route) {
             Signup.route -> Signup
             Login.route -> Login
             AccountSetup.route -> AccountSetup
+            AccountSetupSuccess.route -> AccountSetupSuccess
             EmailVerify.route -> EmailVerify
             PhoneVerify.route -> PhoneVerify
             Home.route -> Home
