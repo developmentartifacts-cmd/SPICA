@@ -3,16 +3,18 @@ package com.gibson.spica.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.gibson.spica.ui.AppNavBar
 import com.gibson.spica.ui.screens.*
+import com.gibson.spica.viewmodel.AccountSetupViewModel
 
 @Composable
 actual fun AppNavigation() {
     val current = Router.currentRoute
+    val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
     BackHandler(enabled = current != Screen.Home.route) {
         Router.navigate(Screen.Home.route)
@@ -20,8 +22,11 @@ actual fun AppNavigation() {
 
     Scaffold(
         bottomBar = {
-            if (current !in listOf(Screen.Login.route, Screen.Signup.route, Screen.EmailVerify.route,
-                    Screen.AccountSetup.route, Screen.PhoneVerify.route)) {
+            if (current !in listOf(
+                    Screen.Login.route, Screen.Signup.route, Screen.EmailVerify.route,
+                    Screen.AccountSetup.route, Screen.PhoneVerify.route, Screen.AccountSetupSuccess.route
+                )
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -43,9 +48,9 @@ actual fun AppNavigation() {
                 Screen.Signup.route -> SignupScreen()
                 Screen.Login.route -> LoginScreen()
                 Screen.EmailVerify.route -> EmailVerifyScreen()
-                Screen.AccountSetup.route -> AccountSetupScreen()
-                Screen.AccountSetupSuccess.route -> AccountSetupSuccessScreen()
+                Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)
                 Screen.PhoneVerify.route -> PhoneVerifyScreen()
+                Screen.AccountSetupSuccess.route -> AccountSetupSuccessScreen(viewModel = sharedAccountSetupViewModel)
                 Screen.Home.route -> HomeScreen()
                 Screen.Marketplace.route -> MarketplaceScreen()
                 Screen.Portfolio.route -> PortfolioScreen()
