@@ -16,6 +16,7 @@ fun StepHeader(currentStep: Int, totalSteps: Int, title: String) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = title,
             fontSize = 22.sp,
@@ -29,4 +30,4 @@ fun StepHeader(currentStep: Int, totalSteps: Int, title: String) {
             color = MaterialTheme.colorScheme.primary
         )
     }
-}S
+}
