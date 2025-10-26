@@ -1,5 +1,6 @@
 package com.gibson.spica.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,10 +19,12 @@ import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 
 @Composable
-fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
+fun AccountSetupScreen() {
+    val context = LocalContext.current
+    val viewModel = remember { AccountSetupViewModel(context) }
+
     var currentStep by remember { mutableStateOf(1) }
     var showDialog by remember { mutableStateOf(false) }
-
     val state = viewModel.state
     val totalSteps = 3
 
@@ -199,7 +203,7 @@ fun SearchableDropdown(
 
     val filteredOptions = options.filter { it.contains(searchQuery, ignoreCase = true) }
 
-    Column {
+    Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = if (selected.isEmpty()) searchQuery else selected,
             onValueChange = {
@@ -207,15 +211,18 @@ fun SearchableDropdown(
                 expanded = true
             },
             label = { Text(label) },
-            readOnly = selected.isNotEmpty(),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true }
+                .clickable { expanded = true },
+            singleLine = true
         )
+
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.heightIn(max = 200.dp) // Scrollable
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 200.dp) // scrollable
         ) {
             filteredOptions.forEach { item ->
                 DropdownMenuItem(
