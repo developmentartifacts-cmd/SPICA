@@ -1,49 +1,68 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.lifecycle.ViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import android.content.Context
 
-class AccountSetupViewModel(private val context: Context) {
+class AccountSetupViewModel : ViewModel() {
 
-    var state by mutableStateOf(AccountSetupState())
-        private set
+    var firstName by mutableStateOf("")
+    var secondName by mutableStateOf("")
+    var lastName by mutableStateOf("")
+    var username by mutableStateOf("")
+    var bio by mutableStateOf("")
+    var mobileNumber by mutableStateOf("")
+    var countryCode by mutableStateOf("")
+    var countryName by mutableStateOf("")
 
-    private val viewModelScope = CoroutineScope(Dispatchers.Main)
+    var isLoading by mutableStateOf(false)
+    var currentStep by mutableStateOf(1)
+    var showDialog by mutableStateOf(false)
+    var message by mutableStateOf<String?>(null)
 
-    // Update functions
-    fun updateFirstName(value: String) { state = state.copy(firstName = value) }
-    fun updateSecondName(value: String) { state = state.copy(secondName = value) }
-    fun updateLastName(value: String) { state = state.copy(lastName = value) }
-    fun updateUsername(value: String) { state = state.copy(username = value) }
-    fun updateBio(value: String) { state = state.copy(bio = value) }
-    fun updatePostcode(value: String) { state = state.copy(postcode = value) }
-    fun updateTown(value: String) { state = state.copy(town = value) }
-    fun updatePhone(value: String) { state = state.copy(phone = value) }
+    private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    fun nextStep() {
+        if (currentStep < 3) currentStep++
+    }
+
+    fun prevStep() {
+        if (currentStep > 1) currentStep--
+    }
 
     fun submitAccountSetup(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            state = state.copy(isLoading = true)
-            delay(1000)
-            state = state.copy(isLoading = false)
-            onSuccess()
+        val userId = auth.currentUser?.uid ?: return
+        isLoading = true
+
+        val data = mapOf(
+            "firstName" to firstName,
+            "secondName" to secondName,
+            "lastName" to lastName,
+            "username" to username,
+            "bio" to bio,
+            "mobileNumber" to mobileNumber,
+            "countryCode" to countryCode,
+            "countryName" to countryName
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            firestore.collection("users").document(userId)
+                .set(data)
+                .addOnSuccessListener {
+                    isLoading = false
+                    message = "Account setup successful!"
+                    showDialog = false
+                    onSuccess()
+                }
+                .addOnFailureListener {
+                    isLoading = false
+                    message = it.localizedMessage
+                }
         }
     }
 }
-
-data class AccountSetupState(
-    val firstName: String = "",
-    val secondName: String = "",
-    val lastName: String = "",
-    val username: String = "",
-    val bio: String = "",
-    val postcode: String = "",
-    val town: String = "",
-    val phone: String = "",
-    val isLoading: Boolean = false
-)
