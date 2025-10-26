@@ -2,144 +2,166 @@ package com.gibson.spica.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
 import com.gibson.spica.viewmodel.AccountSetupViewModel
-import network.chaintech.cmpcountrycodepicker.component.CountryPickerBasicTextField
-import network.chaintech.cmpcountrycodepicker.data.CountryDetails
+import kotlinx.coroutines.launch
+import network.chaintech.cmpcountrycodepicker.components.CountryPickerBasicTextField
+import network.chaintech.cmpcountrycodepicker.data.CountryData
 
 @Composable
-fun AccountSetupScreen(viewModel: AccountSetupViewModel) {
-    var showDialog by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Step ${viewModel.currentStep} of ${viewModel.totalSteps}",
-            fontSize = 18.sp
-        )
+    var currentStep by remember { mutableStateOf(1) }
+    val totalSteps = 3
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        when (viewModel.currentStep) {
-            1 -> StepNames(viewModel)
-            2 -> StepBio(viewModel)
-            3 -> StepPhoneExtra(viewModel)
-        }
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = Modifier.fillMaxSize()
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            if (viewModel.currentStep > 1) {
-                Button(onClick = { viewModel.previousStep() }) { Text("Back") }
-            }
+            StepHeader(currentStep = currentStep, totalSteps = totalSteps)
 
-            if (viewModel.currentStep < viewModel.totalSteps) {
-                Button(onClick = { viewModel.nextStep() }) { Text("Next") }
-            } else {
-                Button(onClick = { showDialog = true }) { Text("Finish") }
-            }
-        }
-
-        if (errorMessage != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "⚠️ $errorMessage", color = MaterialTheme.colorScheme.error)
-        }
-    }
 
-    // ✅ Confirmation dialog
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    viewModel.submitAccountSetup(
-                        onSuccess = { Router.navigate(Screen.AccountSetupSuccess.route) },
-                        onError = { errorMessage = it }
-                    )
-                }) {
-                    Text("Confirm")
+            when (currentStep) {
+                1 -> StepNames(viewModel)
+                2 -> StepBio(viewModel)
+                3 -> StepPhoneExtra(viewModel)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (currentStep > 1) {
+                    OutlinedButton(
+                        onClick = { currentStep-- },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Back")
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
+
+                Button(
+                    onClick = {
+                        if (currentStep < totalSteps) {
+                            currentStep++
+                        } else {
+                            coroutineScope.launch {
+                                viewModel.saveUserData()
+                                snackbarHostState.showSnackbar("Account setup completed!")
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (currentStep == totalSteps) "Finish" else "Next")
                 }
-            },
-            title = { Text("Confirm Setup") },
-            text = { Text("Do you want to complete your account setup?") }
-        )
+            }
+        }
     }
 }
 
+/* ---------------------- Step Header ---------------------- */
+@Composable
+private fun StepHeader(currentStep: Int, totalSteps: Int) {
+    Text(
+        text = "Step $currentStep of $totalSteps",
+        fontSize = 18.sp,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+/* ---------------------- Step 1: Names ---------------------- */
 @Composable
 private fun StepNames(viewModel: AccountSetupViewModel) {
-    OutlinedTextField(
-        value = viewModel.firstName,
-        onValueChange = { viewModel.firstName = it },
-        label = { Text("First Name") },
-        modifier = Modifier.fillMaxWidth()
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = viewModel.firstName,
+            onValueChange = { viewModel.firstName = it },
+            label = { Text("First Name *") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-    Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = viewModel.secondName,
+            onValueChange = { viewModel.secondName = it },
+            label = { Text("Second Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-    OutlinedTextField(
-        value = viewModel.middleName,
-        onValueChange = { viewModel.middleName = it },
-        label = { Text("Middle Name") },
-        modifier = Modifier.fillMaxWidth()
-    )
+        OutlinedTextField(
+            value = viewModel.lastName,
+            onValueChange = { viewModel.lastName = it },
+            label = { Text("Last Name *") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-    Spacer(modifier = Modifier.height(12.dp))
-
-    OutlinedTextField(
-        value = viewModel.lastName,
-        onValueChange = { viewModel.lastName = it },
-        label = { Text("Last Name") },
-        modifier = Modifier.fillMaxWidth()
-    )
+        OutlinedTextField(
+            value = viewModel.username,
+            onValueChange = { viewModel.username = it },
+            label = { Text("Username *") },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
+/* ---------------------- Step 2: Bio ---------------------- */
 @Composable
 private fun StepBio(viewModel: AccountSetupViewModel) {
-    OutlinedTextField(
-        value = viewModel.bio,
-        onValueChange = { viewModel.bio = it },
-        label = { Text("Bio") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp),
-        maxLines = 5
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = viewModel.bio,
+            onValueChange = { viewModel.bio = it },
+            label = { Text("Bio") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = VisualTransformation.None,
+            minLines = 3,
+            maxLines = 5
+        )
+
+        OutlinedTextField(
+            value = viewModel.postcode,
+            onValueChange = { viewModel.postcode = it },
+            label = { Text("Postcode") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+    }
 }
 
+/* ---------------------- Step 3: Phone Picker ---------------------- */
 @Composable
 private fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
-    var selectedCountry by remember { mutableStateOf<CountryDetails?>(null) }
+    var selectedCountry by remember { mutableStateOf<CountryData?>(null) }
 
     CountryPickerBasicTextField(
-        mobileNumber = viewModel.mobileNumber,
+        mobileNumber = viewModel.phone,
         defaultCountryCode = "ng",
-        onMobileNumberChange = { viewModel.mobileNumber = it },
-        onCountrySelected = { country ->
+        onMobileNumberChange = { viewModel.phone = it },
+        onCountrySelected = { country: CountryData ->
             selectedCountry = country
-            viewModel.countryName = country.countryName
+            viewModel.countryName = country.name
             viewModel.countryCode = country.countryPhoneCode
         },
         modifier = Modifier.fillMaxWidth(),
@@ -153,7 +175,7 @@ private fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
 
     Spacer(modifier = Modifier.height(16.dp))
     Text(
-        text = "Selected: ${selectedCountry?.countryName ?: viewModel.countryName.ifEmpty { "None" }}",
+        text = "Selected: ${selectedCountry?.name ?: viewModel.countryName.ifEmpty { "None" }}",
         fontSize = 14.sp
     )
 }
