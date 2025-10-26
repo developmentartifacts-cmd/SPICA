@@ -1,110 +1,186 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import android.content.Context
+import androidx.compose.runtime.*
+import androidx.lifecycle.ViewModel
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
-class AccountSetupViewModel {
+class AccountSetupViewModel(private val context: Context? = null) : ViewModel() {
 
-    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    var state by mutableStateOf(AccountSetupState())
+    // --- Step state ---
+    var stepIndex by mutableStateOf(0)
         private set
 
-    // --- Simple hierarchical data model ---
-    private val data = mapOf(
-        "Nigeria" to mapOf(
-            "Lagos" to listOf("Ikeja", "Surulere", "Lekki", "Epe"),
-            "Abuja" to listOf("Gwagwalada", "Wuse", "Maitama", "Asokoro"),
-            "Anambra" to listOf("Awka", "Onitsha", "Nnewi", "Ekwulobia")
-        ),
-        "United States" to mapOf(
-            "California" to listOf("Los Angeles", "San Francisco", "San Diego"),
-            "Texas" to listOf("Houston", "Dallas", "Austin"),
-            "New York" to listOf("New York City", "Buffalo", "Rochester")
-        ),
-        "United Kingdom" to mapOf(
-            "England" to listOf("London", "Manchester", "Liverpool"),
-            "Scotland" to listOf("Edinburgh", "Glasgow"),
-            "Wales" to listOf("Cardiff", "Swansea")
-        )
-    )
+    // --- Dialog visibility ---
+    var showConfirmDialog by mutableStateOf(false)
 
-    val countryList: List<String> = data.keys.toList()
+    // --- Form fields ---
+    var firstName by mutableStateOf("")
+    var secondName by mutableStateOf("")
+    var lastName by mutableStateOf("")
+    var username by mutableStateOf("")
+    var country by mutableStateOf("Nigeria")
+    var state by mutableStateOf("")
+    var town by mutableStateOf("")
+    var postcode by mutableStateOf("")
+    var phone by mutableStateOf("")
+    var additionalInfo by mutableStateOf("")
+    var bio by mutableStateOf("")
 
-    fun getStatesForCountry(country: String): List<String> =
-        data[country]?.keys?.toList() ?: emptyList()
+    // --- UI state ---
+    var isLoading by mutableStateOf(false)
+    var message by mutableStateOf<String?>(null)
+    var usernameError by mutableStateOf<String?>(null)
 
-    fun getTownsForState(state: String): List<String> {
-        return data.values
-            .firstOrNull { it.containsKey(state) }
-            ?.get(state) ?: emptyList()
+    // --- Firestore result for success screen ---
+    var savedSnapshot by mutableStateOf<DocumentSnapshot?>(null)
+
+    // --- Location data ---
+    private var nigeriaMap: Map<String, List<String>> = emptyMap()
+    val countryList = listOf("Nigeria")
+
+    init {
+        scope.launch { loadNigeriaJson() }
     }
 
-    // --- Field updates ---
-    fun updateFirstName(value: String) { state = state.copy(firstName = value) }
-    fun updateSecondName(value: String) { state = state.copy(secondName = value) }
-    fun updateLastName(value: String) { state = state.copy(lastName = value) }
-    fun updateUsername(value: String) { state = state.copy(username = value) }
-    fun updateCountry(value: String) {
-        state = state.copy(
-            country = value,
-            state = "",
-            town = "",
-            postcode = ""
-        )
+    private suspend fun loadNigeriaJson() {
+        withContext(Dispatchers.IO) {
+            try {
+                val stream = this::class.java.classLoader?.getResourceAsStream("nigeria_states.json")
+                stream?.use {
+                    val text = it.bufferedReader().readText()
+                    val jsonObj = Json.parseToJsonElement(text).jsonObject
+                    nigeriaMap = jsonObj.mapValues { (_, v) ->
+                        v.jsonArray.map { it.jsonPrimitive.content }
+                    }
+                }
+            } catch (_: Throwable) {
+            }
+        }
     }
-    fun updateState(value: String) {
-        state = state.copy(
-            state = value,
-            town = "",
-            postcode = ""
-        )
-    }
-    fun updateTown(value: String) { state = state.copy(town = value) }
-    fun updatePostcode(value: String) { state = state.copy(postcode = value) }
-    fun updatePhone(value: String) { state = state.copy(phone = value) }
 
-    fun submitAccountSetup() {
-        if (state.firstName.isBlank() || state.lastName.isBlank() || state.username.isBlank() ||
-            state.country.isBlank() || state.state.isBlank() || state.town.isBlank() || state.postcode.isBlank()
-        ) {
-            state = state.copy(message = "Please fill all required fields (*)")
+    fun getStatesForCountry(countryName: String): List<String> {
+        return if (countryName == "Nigeria") nigeriaMap.keys.sorted() else emptyList()
+    }
+
+    fun getTownsForState(stateName: String): List<String> {
+        return nigeriaMap[stateName] ?: emptyList()
+    }
+
+    // --- Step navigation & validation ---
+    fun nextStep() {
+        message = null
+        when (stepIndex) {
+            0 -> {
+                if (firstName.isBlank() || lastName.isBlank()) {
+                    message = "Please fill in required name fields."
+                    return
+                }
+                stepIndex = 1
+            }
+            1 -> {
+                if (country.isBlank() || state.isBlank() || town.isBlank() || postcode.isBlank()) {
+                    message = "Please select country, state, town and enter postcode."
+                    return
+                }
+                stepIndex = 2
+            }
+            2 -> {
+                showConfirmDialog = true
+            }
+        }
+    }
+
+    fun prevStep() {
+        message = null
+        if (stepIndex > 0) stepIndex--
+    }
+
+    // --- Confirm save ---
+    fun confirmSave() {
+        showConfirmDialog = false
+        checkUsernameUniquenessAndSave()
+    }
+
+    // --- Username uniqueness check + save ---
+    private fun checkUsernameUniquenessAndSave() {
+        if (username.isBlank()) {
+            usernameError = "Username is required."
+            return
+        }
+        isLoading = true
+        firestore.collection("users")
+            .whereEqualTo("username", username)
+            .get()
+            .addOnSuccessListener { q ->
+                if (!q.isEmpty) {
+                    usernameError = "Username already taken."
+                    isLoading = false
+                } else {
+                    usernameError = null
+                    saveToFirestore()
+                }
+            }
+            .addOnFailureListener { e ->
+                message = "Error checking username: ${e.message}"
+                isLoading = false
+            }
+    }
+
+    private fun saveToFirestore() {
+        val user = auth.currentUser
+        if (user == null) {
+            message = "No logged-in user found."
             return
         }
 
-        // pretend saving data (in real app, send to Firestore)
-        state = state.copy(isLoading = true)
-        viewModelScope.launch {
-            delay(1200)
-            state = state.copy(isLoading = false, message = "Account information saved successfully.")
-            Router.navigate(Screen.PhoneVerify.route)
-        }
+        isLoading = true
+        val doc = hashMapOf(
+            "uid" to user.uid,
+            "email" to user.email,
+            "firstName" to firstName,
+            "secondName" to secondName,
+            "lastName" to lastName,
+            "username" to username,
+            "country" to country,
+            "state" to state,
+            "town" to town,
+            "postcode" to postcode,
+            "phone" to phone,
+            "additionalInfo" to additionalInfo,
+            "bio" to bio,
+            "createdAt" to com.google.firebase.Timestamp.now()
+        )
+
+        firestore.collection("users").document(user.uid)
+            .set(doc)
+            .addOnSuccessListener {
+                firestore.collection("users").document(user.uid).get()
+                    .addOnSuccessListener { snapshot ->
+                        savedSnapshot = snapshot
+                        isLoading = false
+                        Router.navigate(Screen.AccountSetupSuccess.route)
+                    }
+            }
+            .addOnFailureListener { e ->
+                isLoading = false
+                message = "Failed to save account: ${e.message}"
+            }
     }
 
-    fun skipPhoneVerification() {
-        Router.navigate(Screen.Home.route)
+    override fun onCleared() {
+        super.onCleared()
+        scope.cancel()
     }
 }
-
-data class AccountSetupState(
-    val firstName: String = "",
-    val secondName: String = "",
-    val lastName: String = "",
-    val username: String = "",
-    val usernameError: String? = null,
-    val country: String = "",
-    val state: String = "",
-    val town: String = "",
-    val postcode: String = "",
-    val phone: String = "",
-    val isLoading: Boolean = false,
-    val message: String? = null
-)
