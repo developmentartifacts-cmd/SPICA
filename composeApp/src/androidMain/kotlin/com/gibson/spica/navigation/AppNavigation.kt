@@ -44,6 +44,7 @@ actual fun AppNavigation() {
                 Screen.Login.route -> LoginScreen()
                 Screen.EmailVerify.route -> EmailVerifyScreen()
                 Screen.AccountSetup.route -> AccountSetupScreen()
+                Screen.AccountSetupSuccess.route -> AccountSetupSuccessScreen()
                 Screen.PhoneVerify.route -> PhoneVerifyScreen()
                 Screen.Home.route -> HomeScreen()
                 Screen.Marketplace.route -> MarketplaceScreen()
