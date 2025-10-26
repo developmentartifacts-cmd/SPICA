@@ -30,34 +30,31 @@ class AccountSetupViewModel {
             try {
                 // Load JSON file from resources
                 val fileSystem = FileSystem.SYSTEM
-                val jsonPath = "composeApp/src/commonMain/resources/nigeria_states.json".toPath()
+                val jsonPath = "composeApp/src/commonMain/resources/nigeria.json".toPath()
                 val jsonString = fileSystem.read(jsonPath) { readUtf8() }
 
                 val jsonElement = Json.parseToJsonElement(jsonString)
-                val data = jsonElement.jsonObject.mapValues { (_, value) ->
+                nigeriaData = jsonElement.jsonObject.mapValues { (_, value) ->
                     value.jsonArray.map { it.jsonPrimitive.content }
                 }
-                nigeriaData = data
             } catch (e: Exception) {
                 println("Error loading Nigeria data: ${e.message}")
             }
         }
     }
 
-    // State and town list based on selected country
-    fun getStates(): List<String> {
-        return nigeriaData.keys.toList()
-    }
+    // Provide state list for dropdown
+    fun getStates(): List<String> = nigeriaData.keys.sorted()
 
-    fun getTowns(state: String): List<String> {
-        return nigeriaData[state] ?: emptyList()
-    }
+    // Provide LGAs for selected state
+    fun getTowns(state: String): List<String> = nigeriaData[state]?.sorted() ?: emptyList()
 
     // Update functions
-    fun updateCountry(value: String) { state = state.copy(country = value) }
-    fun updateState(value: String) { state = state.copy(state = value) }
-    fun updateTown(value: String) { state = state.copy(town = value) }
+    fun updateState(value: String) {
+        state = state.copy(state = value, town = "") // Reset town when state changes
+    }
 
+    fun updateTown(value: String) { state = state.copy(town = value) }
     fun updateFirstName(value: String) { state = state.copy(firstName = value) }
     fun updateSecondName(value: String) { state = state.copy(secondName = value) }
     fun updateLastName(value: String) { state = state.copy(lastName = value) }
