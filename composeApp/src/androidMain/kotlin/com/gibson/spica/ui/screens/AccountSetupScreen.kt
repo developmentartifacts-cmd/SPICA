@@ -1,7 +1,6 @@
 package com.gibson.spica.ui.screens
 
 import android.content.Context
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +16,14 @@ import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
+import network.chaintech.countrypicker.model.CountryDetails
+import network.chaintech.countrypicker.CountryPickerBasicTextField
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @Composable
 fun AccountSetupScreen() {
@@ -25,8 +32,9 @@ fun AccountSetupScreen() {
 
     var currentStep by remember { mutableStateOf(1) }
     var showDialog by remember { mutableStateOf(false) }
-    val state = viewModel.state
     val totalSteps = 3
+
+    val state = viewModel.state
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
@@ -39,13 +47,13 @@ fun AccountSetupScreen() {
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            StepHeader(currentStep = currentStep, totalSteps = totalSteps, title = "Account Setup")
+            StepHeader(currentStep, totalSteps, "Account Setup")
 
             Spacer(Modifier.height(16.dp))
 
             when (currentStep) {
                 1 -> StepNames(viewModel)
-                2 -> StepLocation(viewModel)
+                2 -> StepBio(viewModel)
                 3 -> StepPhoneExtra(viewModel)
             }
 
@@ -142,28 +150,25 @@ fun StepNames(viewModel: AccountSetupViewModel) {
 }
 
 @Composable
-fun StepLocation(viewModel: AccountSetupViewModel) {
+fun StepBio(viewModel: AccountSetupViewModel) {
     val state = viewModel.state
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-
-        SearchableDropdown(
-            label = "State *",
-            options = viewModel.getStates(),
-            selected = state.state,
-            onSelect = { viewModel.updateState(it) }
+        OutlinedTextField(
+            value = state.bio,
+            onValueChange = { viewModel.updateBio(it) },
+            label = { Text("Bio") },
+            modifier = Modifier.fillMaxWidth()
         )
-
-        SearchableDropdown(
-            label = "Town / LGA *",
-            options = viewModel.getTowns(state.state),
-            selected = state.town,
-            onSelect = { viewModel.updateTown(it) }
+        OutlinedTextField(
+            value = state.town,
+            onValueChange = { viewModel.updateTown(it) },
+            label = { Text("Town/City") },
+            modifier = Modifier.fillMaxWidth()
         )
-
         OutlinedTextField(
             value = state.postcode,
             onValueChange = { viewModel.updatePostcode(it) },
-            label = { Text("Postcode *") },
+            label = { Text("Postcode") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
@@ -172,68 +177,39 @@ fun StepLocation(viewModel: AccountSetupViewModel) {
 
 @Composable
 fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
-    val state = viewModel.state
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(
-            value = state.phone,
-            onValueChange = { viewModel.updatePhone(it) },
-            label = { Text("Phone Number") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
-        )
-
-        OutlinedTextField(
-            value = state.bio,
-            onValueChange = { viewModel.updateBio(it) },
-            label = { Text("Bio (optional)") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        AccountPhoneInput(viewModel)
     }
 }
 
 @Composable
-fun SearchableDropdown(
-    label: String,
-    options: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+fun AccountPhoneInput(viewModel: AccountSetupViewModel) {
+    var mobileNumber by remember { mutableStateOf(viewModel.state.phone) }
+    var selectedCountry by remember { mutableStateOf<CountryDetails?>(null) }
 
-    val filteredOptions = options.filter { it.contains(searchQuery, ignoreCase = true) }
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = if (selected.isEmpty()) searchQuery else selected,
-            onValueChange = {
-                searchQuery = it
-                expanded = true
-            },
-            label = { Text(label) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            singleLine = true
+    CountryPickerBasicTextField(
+        mobileNumber = mobileNumber,
+        defaultCountryCode = "ng",
+        onMobileNumberChange = {
+            mobileNumber = it
+            viewModel.updatePhone(it)
+        },
+        onCountrySelected = { country ->
+            selectedCountry = country
+        },
+        modifier = Modifier.fillMaxWidth(),
+        defaultPaddingValues = PaddingValues(6.dp),
+        showCountryFlag = true,
+        showCountryPhoneCode = true,
+        showArrowDropDown = true,
+        label = { Text("Mobile Number") },
+        focusedBorderThickness = 2.dp,
+        unfocusedBorderThickness = 1.dp,
+        shape = RoundedCornerShape(10.dp),
+        verticalDividerColor = Color(0xFFDDDDDD),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFFDDDDDD),
+            unfocusedBorderColor = Color(0xFFDDDDDD)
         )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 200.dp) // scrollable
-        ) {
-            filteredOptions.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(item) },
-                    onClick = {
-                        onSelect(item)
-                        searchQuery = ""
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
+    )
 }
