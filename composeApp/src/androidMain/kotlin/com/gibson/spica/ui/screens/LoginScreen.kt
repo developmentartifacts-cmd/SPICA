@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 
@@ -20,21 +21,33 @@ fun LoginScreen() {
     var loading by remember { mutableStateOf(false) }
 
     val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Login", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = email, onValueChange = { email = it },
-                label = { Text("Email") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
-                value = password, onValueChange = { password = it },
-                label = { Text("Password") }, singleLine = true,
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -43,26 +56,60 @@ fun LoginScreen() {
 
             Button(
                 onClick = {
+                    message = null
                     loading = true
                     auth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
-                            loading = false
                             if (task.isSuccessful) {
                                 val user = auth.currentUser
-                                if (user != null && user.isEmailVerified) {
-                                    Router.navigate(Screen.AccountSetup.route)
-                                } else {
-                                    Router.navigate(Screen.EmailVerify.route)
+                                if (user == null) {
+                                    message = "Authentication failed. Please try again."
+                                    loading = false
+                                    return@addOnCompleteListener
                                 }
+
+                                if (!user.isEmailVerified) {
+                                    loading = false
+                                    Router.navigate(Screen.EmailVerify.route)
+                                    return@addOnCompleteListener
+                                }
+
+                                // 🔹 Check Firestore for user document
+                                firestore.collection("users").document(user.uid)
+                                    .get()
+                                    .addOnSuccessListener { doc ->
+                                        loading = false
+                                        if (doc.exists()) {
+                                            Router.navigate(Screen.Home.route)
+                                        } else {
+                                            Router.navigate(Screen.AccountSetup.route)
+                                        }
+                                    }
+                                    .addOnFailureListener {
+                                        loading = false
+                                        message = "Error loading user data. Try again."
+                                    }
                             } else {
-                                message = task.exception?.message
+                                loading = false
+                                message = task.exception?.localizedMessage
+                                    ?: "Login failed. Please check your credentials."
                             }
                         }
                 },
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (loading) "Logging in..." else "Login")
+                if (loading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Logging in...")
+                } else {
+                    Text("Login")
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -70,7 +117,10 @@ fun LoginScreen() {
                 Text("Don't have an account? Sign Up")
             }
 
-            message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            message?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
