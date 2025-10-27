@@ -6,14 +6,26 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// 🎨 Monochrome palette for SPICA
+
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF00FF88),
-    onPrimary = Color.Black,
+    background = Color(0xFF000000),     // Pure black background
+    onBackground = Color(0xFFFFFFFF),  // White text/icons on black
+    surface = Color(0xFF121212),       // Slightly lifted surface
+    onSurface = Color(0xFFFFFFFF),
+    primary = Color(0xFFFFFFFF),       // White for active icons/pills
+    onPrimary = Color(0xFF000000),     // Black content inside white pill
+    secondary = Color(0xFFBDBDBD),     // Light grey for unselected icons
 )
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF00FF88),
-    onPrimary = Color.White,
+    background = Color(0xFFFFFFFF),     // Pure white background
+    onBackground = Color(0xFF000000),  // Black text/icons on white
+    surface = Color(0xFFF5F5F5),       // Light lifted surface
+    onSurface = Color(0xFF000000),
+    primary = Color(0xFF000000),       // Black for active icons/pills
+    onPrimary = Color(0xFFFFFFFF),     // White icon inside black pill
+    secondary = Color(0xFF9E9E9E),     // Dim grey for unselected icons
 )
 
 @Composable
