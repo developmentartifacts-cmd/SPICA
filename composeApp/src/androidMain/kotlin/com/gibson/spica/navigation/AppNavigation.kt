@@ -2,59 +2,57 @@ package com.gibson.spica.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gibson.spica.ui.AppNavBar
 import com.gibson.spica.ui.screens.*
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import android.app.Activity
 
 @Composable
 actual fun AppNavigation() {
-    val context = LocalContext.current
-    val activity = context as? Activity
-
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
+
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    val current = Router.currentRoute
     val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
-    var initialized by remember { mutableStateOf(false) }
-
-    // ✅ Determine starting route immediately at app open
+    // 🔹 Check authentication and Firestore document once on app open
     LaunchedEffect(Unit) {
         val user = auth.currentUser
         if (user == null) {
-            Router.resetTo(Screen.Login.route)
-            initialized = true
+            startDestination = Screen.Login.route
         } else if (!user.isEmailVerified) {
-            Router.resetTo(Screen.EmailVerify.route)
-            initialized = true
+            startDestination = Screen.EmailVerify.route
         } else {
+            // ✅ Check if account setup exists
             firestore.collection("users").document(user.uid)
                 .get()
-                .addOnSuccessListener { snapshot ->
-                    if (snapshot.exists()) {
-                        Router.resetTo(Screen.Home.route)
+                .addOnSuccessListener { doc ->
+                    startDestination = if (doc.exists()) {
+                        Screen.Home.route
                     } else {
-                        Router.resetTo(Screen.AccountSetup.route)
+                        Screen.AccountSetup.route
                     }
-                    initialized = true
+                    Router.navigate(startDestination!!)
                 }
                 .addOnFailureListener {
-                    Router.resetTo(Screen.Login.route)
-                    initialized = true
+                    startDestination = Screen.Login.route
+                    Router.navigate(Screen.Login.route)
                 }
         }
+        // Fallback for quick UI feedback
+        startDestination?.let { Router.navigate(it) }
     }
 
-    // 🔄 Show quick progress while verifying user state
-    if (!initialized) {
+    // 🕓 Show loading while deciding
+    if (startDestination == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -64,29 +62,10 @@ actual fun AppNavigation() {
         return
     }
 
-    val current = Router.currentRoute
-
-    // 🧭 Handle Android back navigation properly
-    BackHandler {
-        when (current) {
-            Screen.Signup.route, Screen.Login.route -> {
-                // Exit app on login/signup back press
-                activity?.finish()
-            }
-
-            Screen.EmailVerify.route, Screen.AccountSetup.route -> {
-                // Disable back during auth flow
-            }
-
-            else -> {
-                // Normal navigation in the app
-                if (current != Screen.Home.route) {
-                    Router.navigate(Screen.Home.route)
-                } else {
-                    activity?.finish()
-                }
-            }
-        }
+    // 🔙 Prevent navigating back to home until logged in and verified
+    BackHandler(enabled = current != Screen.Home.route) {
+        if (current != Screen.Login.route && current != Screen.Signup.route)
+            Router.navigate(Screen.Home.route)
     }
 
     Scaffold(
@@ -104,10 +83,9 @@ actual fun AppNavigation() {
                         .padding(bottom = 5.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    AppNavBar(
-                        currentRoute = current,
-                        onItemClick = { route -> Router.navigate(route) }
-                    )
+                    AppNavBar(currentRoute = current, onItemClick = { route ->
+                        Router.navigate(route)
+                    })
                 }
             }
         }
