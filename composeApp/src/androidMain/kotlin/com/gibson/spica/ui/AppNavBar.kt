@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,21 +20,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // ===== DESIGN CONSTANTS =====
-private val NavBarBackground = Color(0xFF1C1C1E)
-private val SelectedGreen = Color(0xFFAEF359)
-private val UnselectedGray = Color(0xFF333333)
-private val SelectedIconTint = Color.Black
-private val UnselectedIconTint = Color.White
-private val TextColor = Color.White
-
 private val NavBarHeight = 72.dp
 private val NavBarCorner = 36.dp
-private val NavBarHorizontalMargin = 10.dp // ✅ tighter side spacing
+private val NavBarHorizontalMargin = 10.dp
 private val UnselectedTabSize = 60.dp
 private val UnselectedIconSize = 24.dp
 private val SelectedPillHeight = 60.dp
@@ -43,10 +36,21 @@ private val SelectedIconCircle = 50.dp
 private val SelectedIconSize = 24.dp
 private val SelectedIconTextGap = 6.dp
 private val SelectedTextSize = 14.sp
-private val MaxNavBarWidth = 390.dp // ✅ fixed max width
+private val MaxNavBarWidth = 390.dp
 
 @Composable
 actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    // Pull colors from current theme
+    val navBackground = colorScheme.surface
+    val selectedPillBackground = colorScheme.onSurface.copy(alpha = 0.1f)
+    val selectedCircle = colorScheme.primary
+    val selectedIconTint = colorScheme.onPrimary
+    val selectedTextColor = colorScheme.onSurface
+    val unselectedCircle = colorScheme.onSurface.copy(alpha = 0.1f)
+    val unselectedIconTint = colorScheme.onSurface.copy(alpha = 0.6f)
+
     val icons = listOf(
         Icons.Default.Home,
         Icons.Default.Public,
@@ -64,17 +68,17 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = NavBarHorizontalMargin), // ✅ space from screen edges
+            .padding(horizontal = NavBarHorizontalMargin),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = MaxNavBarWidth) // ✅ keep width within 390.dp even on big screens
-                .fillMaxWidth() // only fills up to 390dp center-aligned
+                .widthIn(max = MaxNavBarWidth)
+                .fillMaxWidth()
                 .height(NavBarHeight)
-                .clip(RoundedCornerShape(NavBarCorner)) // full rounded pill
-                .background(NavBarBackground),
-            color = Color.Transparent
+                .clip(RoundedCornerShape(NavBarCorner))
+                .background(navBackground),
+            color = colorScheme.surface
         ) {
             Row(
                 modifier = Modifier
@@ -102,7 +106,7 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
                                     .width(SelectedPillWidth)
                                     .height(SelectedPillHeight)
                                     .clip(RoundedCornerShape(SelectedPillCorner))
-                                    .background(UnselectedGray.copy(alpha = 0.45f))
+                                    .background(selectedPillBackground)
                                     .padding(horizontal = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Start
@@ -111,13 +115,13 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
                                     modifier = Modifier
                                         .size(SelectedIconCircle)
                                         .clip(CircleShape)
-                                        .background(SelectedGreen),
+                                        .background(selectedCircle),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = icons[index],
                                         contentDescription = null,
-                                        tint = SelectedIconTint,
+                                        tint = selectedIconTint,
                                         modifier = Modifier.size(SelectedIconSize)
                                     )
                                 }
@@ -126,7 +130,7 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
 
                                 Text(
                                     text = MainNavItems.getOrNull(index)?.label ?: "",
-                                    color = TextColor,
+                                    color = selectedTextColor,
                                     fontSize = SelectedTextSize
                                 )
                             }
@@ -135,13 +139,13 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
                                 modifier = Modifier
                                     .size(UnselectedTabSize)
                                     .clip(CircleShape)
-                                    .background(UnselectedGray),
+                                    .background(unselectedCircle),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = icons[index],
                                     contentDescription = null,
-                                    tint = UnselectedIconTint,
+                                    tint = unselectedIconTint,
                                     modifier = Modifier.size(UnselectedIconSize)
                                 )
                             }
