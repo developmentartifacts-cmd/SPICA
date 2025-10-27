@@ -5,12 +5,14 @@ package com.gibson.spica.navigation
  * Used by Router and NavigationModel.
  */
 sealed class Screen(val route: String) {
+
+    // 🔐 Authentication Flow
     object Signup : Screen("signup")
     object Login : Screen("login")
-    object AccountSetup : Screen("account_setup")
-    object AccountSetupSuccess : Screen("account_setup_success")
     object EmailVerify : Screen("email_verify")
-    object PhoneVerify : Screen("phone_verify")
+    object AccountSetup : Screen("account_setup")
+
+    // 🏠 Main App Screens
     object Home : Screen("home")
     object Marketplace : Screen("marketplace")
     object Portfolio : Screen("portfolio")
@@ -20,10 +22,8 @@ sealed class Screen(val route: String) {
         fun fromRoute(route: String?): Screen? = when (route) {
             Signup.route -> Signup
             Login.route -> Login
-            AccountSetup.route -> AccountSetup
-            AccountSetupSuccess.route -> AccountSetupSuccess
             EmailVerify.route -> EmailVerify
-            PhoneVerify.route -> PhoneVerify
+            AccountSetup.route -> AccountSetup
             Home.route -> Home
             Marketplace.route -> Marketplace
             Portfolio.route -> Portfolio
