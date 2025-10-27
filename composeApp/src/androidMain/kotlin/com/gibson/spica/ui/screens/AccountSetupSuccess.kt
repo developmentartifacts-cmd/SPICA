@@ -85,15 +85,27 @@ fun AccountSetupSuccessScreen() {
                         text = "Welcome, ${userData?.get("firstName")} ${userData?.get("lastName")}",
                         fontSize = 18.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
 
+                    if (!userData?.get("bio").isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Bio: ${userData?.get("bio")}",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider()
+
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text("Username: ${userData?.get("username") ?: "N/A"}")
                     Text("Email: ${auth.currentUser?.email ?: "N/A"}")
-                    Text("Country: ${userData?.get("country") ?: "N/A"}")
-                    Text("State: ${userData?.get("state") ?: "N/A"}")
-                    Text("City: ${userData?.get("town") ?: "N/A"}")
-                    Text("Postcode: ${userData?.get("postcode") ?: "N/A"}")
-                    Text("Phone: ${userData?.get("phone") ?: "N/A"}")
+
+                    val countryCode = userData?.get("countryCode") ?: "N/A"
+                    val phone = userData?.get("phone") ?: "N/A"
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Phone: $countryCode $phone")
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
