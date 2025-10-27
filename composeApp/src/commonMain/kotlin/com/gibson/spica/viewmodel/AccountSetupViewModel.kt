@@ -16,7 +16,7 @@ class AccountSetupViewModel {
     var currentStep by mutableStateOf(1)
         private set
 
-    // Firebase instances
+    // Firebase
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -25,18 +25,19 @@ class AccountSetupViewModel {
     var lastName by mutableStateOf("")
     var username by mutableStateOf("")
 
-    // Step 2 - Bio
+    // Step 2 - Bio (Location)
     var selectedCountry by mutableStateOf("")
     var selectedState by mutableStateOf("")
     var selectedTown by mutableStateOf("")
 
-    // Step 3 - Phone & Bio
+    // Step 3 - Contact + Bio
     var phoneNumber by mutableStateOf("")
     var bio by mutableStateOf("")
 
-    // Loading and dialog
+    // UI state
     var isSaving by mutableStateOf(false)
     var showConfirmationDialog by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
 
     // 🔹 Derived lists
     val countries: List<String>
@@ -48,11 +49,11 @@ class AccountSetupViewModel {
         } else emptyList()
 
     val towns: List<String>
-        get() = if (selectedState.isNotEmpty() && selectedCountry.isNotEmpty()) {
+        get() = if (selectedCountry.isNotEmpty() && selectedState.isNotEmpty()) {
             LocationData.getStatesForCountry(selectedCountry)[selectedState] ?: emptyList()
         } else emptyList()
 
-    // 🔹 Navigation control
+    // 🔹 Step navigation
     fun nextStep() {
         if (currentStep < 3) currentStep++
     }
@@ -61,20 +62,26 @@ class AccountSetupViewModel {
         if (currentStep > 1) currentStep--
     }
 
-    // 🔹 Save user data to Firestore
+    // 🔹 Save account setup info to Firestore
     fun saveAccountData() {
-        val userId = auth.currentUser?.uid ?: return
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            errorMessage = "User not logged in."
+            return
+        }
+
         isSaving = true
+        errorMessage = null
 
         val userMap = mapOf(
-            "firstName" to firstName,
-            "lastName" to lastName,
-            "username" to username,
+            "firstName" to firstName.trim(),
+            "lastName" to lastName.trim(),
+            "username" to username.trim(),
             "country" to selectedCountry,
             "state" to selectedState,
             "town" to selectedTown,
-            "phone" to phoneNumber,
-            "bio" to bio
+            "phone" to phoneNumber.trim(),
+            "bio" to bio.trim()
         )
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -83,10 +90,11 @@ class AccountSetupViewModel {
                 .addOnSuccessListener {
                     isSaving = false
                     showConfirmationDialog = false
-                    Router.navigate(Screen.PhoneVerify.route)
+                    Router.navigate(Screen.Home.route) // ✅ Directly to home
                 }
-                .addOnFailureListener {
+                .addOnFailureListener { e ->
                     isSaving = false
+                    errorMessage = e.localizedMessage
                 }
         }
     }
