@@ -1,176 +1,231 @@
 package com.gibson.spica.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.AccountSetupViewModel
-import network.chaintech.cmp_country_code_picker.picker.CountryPickerBasicTextField
-import network.chaintech.cmp_country_code_picker.model.CountryDetails
 
 @Composable
-fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
-    val currentStep = viewModel.currentStep
-    val snackbarHostState = remember { SnackbarHostState() }
+fun AccountSetupScreen(viewModel: AccountSetupViewModel) {
+    val scrollState = rememberScrollState()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            StepHeader(
-                currentStep = currentStep,
-                totalSteps = 3,
-                title = when (currentStep) {
-                    1 -> "Your Name"
-                    2 -> "Bio Information"
-                    3 -> "Phone & Extras"
-                    else -> ""
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp)
+            .verticalScroll(scrollState),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+            Text(
+                text = "Account Setup (Step ${viewModel.currentStep} of 3)",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            when (currentStep) {
+            when (viewModel.currentStep) {
                 1 -> StepNames(viewModel)
                 2 -> StepBio(viewModel)
-                3 -> StepPhoneExtra(viewModel)
+                3 -> StepPhone(viewModel)
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                if (currentStep > 1) {
-                    TextButton(onClick = { viewModel.prevStep() }) {
+                if (viewModel.currentStep > 1) {
+                    Button(onClick = { viewModel.previousStep() }) {
                         Text("Back")
                     }
-                } else {
-                    Spacer(modifier = Modifier.width(64.dp))
                 }
 
                 Button(
-                    onClick = { viewModel.nextStep() },
-                    enabled = !viewModel.isLoading,
-                ) {
-                    Text(if (currentStep < 3) "Next" else "Finish")
-                }
-            }
-
-            if (viewModel.showConfirmDialog) {
-                AlertDialog(
-                    onDismissRequest = { viewModel.showConfirmDialog = false },
-                    title = { Text("Confirm Setup") },
-                    text = { Text("Do you want to complete account setup?") },
-                    confirmButton = {
-                        TextButton(onClick = { viewModel.submitAccountSetup() }) {
-                            Text("Confirm")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { viewModel.showConfirmDialog = false }) {
-                            Text("Cancel")
+                    onClick = {
+                        if (viewModel.currentStep < 3) {
+                            viewModel.nextStep()
+                        } else {
+                            viewModel.showConfirmationDialog = true
                         }
                     }
-                )
+                ) {
+                    Text(if (viewModel.currentStep < 3) "Next" else "Finish")
+                }
             }
+        }
 
-            if (viewModel.message != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(viewModel.message!!, color = MaterialTheme.colorScheme.error)
+        if (viewModel.showConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.showConfirmationDialog = false },
+                title = { Text("Confirm Save") },
+                text = { Text("Do you want to save your account information and proceed?") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.saveAccountData() }) {
+                        Text("Yes")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.showConfirmationDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (viewModel.isSaving) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
         }
     }
 }
 
-@Composable
-fun StepHeader(currentStep: Int, totalSteps: Int, title: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(title, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = currentStep / totalSteps.toFloat(),
-            modifier = Modifier.fillMaxWidth(0.8f)
-        )
-    }
-}
-
+/* ---------------- STEP 1 ---------------- */
 @Composable
 fun StepNames(viewModel: AccountSetupViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = viewModel.firstName,
             onValueChange = { viewModel.firstName = it },
-            label = { Text("First Name *") },
+            label = { Text("First Name") },
             modifier = Modifier.fillMaxWidth()
         )
-        OutlinedTextField(
-            value = viewModel.secondName,
-            onValueChange = { viewModel.secondName = it },
-            label = { Text("Second Name (optional)") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        Spacer(modifier = Modifier.height(10.dp))
         OutlinedTextField(
             value = viewModel.lastName,
             onValueChange = { viewModel.lastName = it },
-            label = { Text("Last Name *") },
+            label = { Text("Last Name") },
             modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-@Composable
-fun StepBio(viewModel: AccountSetupViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(modifier = Modifier.height(10.dp))
         OutlinedTextField(
             value = viewModel.username,
             onValueChange = { viewModel.username = it },
-            label = { Text("Username *") },
+            label = { Text("Username") },
             modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = viewModel.bio,
-            onValueChange = { viewModel.bio = it },
-            label = { Text("Bio / About you") },
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 4
         )
     }
 }
 
+/* ---------------- STEP 2 ---------------- */
 @Composable
-fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
-    var selectedCountry by remember { mutableStateOf<CountryDetails?>(null) }
+fun StepBio(viewModel: AccountSetupViewModel) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        var expandedCountry by remember { mutableStateOf(false) }
+        var expandedState by remember { mutableStateOf(false) }
+        var expandedTown by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CountryPickerBasicTextField(
-            mobileNumber = viewModel.phone,
-            defaultCountryCode = "ng",
-            onMobileNumberChange = { viewModel.phone = it },
-            onCountrySelected = {
-                selectedCountry = it
-                viewModel.selectedCountryCode = it.countryPhoneCode
-            },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Mobile Number") }
-        )
-
-        if (selectedCountry != null) {
-            Text("Selected Country: ${selectedCountry!!.countryName} (${selectedCountry!!.countryPhoneCode})")
+        // Country Dropdown
+        ExposedDropdownMenuBox(expanded = expandedCountry, onExpandedChange = { expandedCountry = !expandedCountry }) {
+            OutlinedTextField(
+                value = viewModel.selectedCountry,
+                onValueChange = {},
+                label = { Text("Country") },
+                readOnly = true,
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(expanded = expandedCountry, onDismissRequest = { expandedCountry = false }) {
+                viewModel.countries.forEach { country ->
+                    DropdownMenuItem(
+                        text = { Text(country) },
+                        onClick = {
+                            viewModel.selectedCountry = country
+                            viewModel.selectedState = ""
+                            viewModel.selectedTown = ""
+                            expandedCountry = false
+                        }
+                    )
+                }
+            }
         }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // State Dropdown
+        if (viewModel.selectedCountry.isNotEmpty()) {
+            ExposedDropdownMenuBox(expanded = expandedState, onExpandedChange = { expandedState = !expandedState }) {
+                OutlinedTextField(
+                    value = viewModel.selectedState,
+                    onValueChange = {},
+                    label = { Text("State") },
+                    readOnly = true,
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(expanded = expandedState, onDismissRequest = { expandedState = false }) {
+                    viewModel.states.forEach { state ->
+                        DropdownMenuItem(
+                            text = { Text(state) },
+                            onClick = {
+                                viewModel.selectedState = state
+                                viewModel.selectedTown = ""
+                                expandedState = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Town Dropdown
+        if (viewModel.selectedState.isNotEmpty()) {
+            ExposedDropdownMenuBox(expanded = expandedTown, onExpandedChange = { expandedTown = !expandedTown }) {
+                OutlinedTextField(
+                    value = viewModel.selectedTown,
+                    onValueChange = {},
+                    label = { Text("Town") },
+                    readOnly = true,
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(expanded = expandedTown, onDismissRequest = { expandedTown = false }) {
+                    viewModel.towns.forEach { town ->
+                        DropdownMenuItem(
+                            text = { Text(town) },
+                            onClick = {
+                                viewModel.selectedTown = town
+                                expandedTown = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* ---------------- STEP 3 ---------------- */
+@Composable
+fun StepPhone(viewModel: AccountSetupViewModel) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        OutlinedTextField(
+            value = viewModel.phoneNumber,
+            onValueChange = { viewModel.phoneNumber = it },
+            label = { Text("Phone Number") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        OutlinedTextField(
+            value = viewModel.bio,
+            onValueChange = { viewModel.bio = it },
+            label = { Text("Short Bio / Description") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+        )
     }
 }
