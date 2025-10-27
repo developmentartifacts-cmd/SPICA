@@ -6,75 +6,96 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gibson.spica.ui.AppNavBar
 import com.gibson.spica.ui.screens.*
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.app.Activity
 
 @Composable
 actual fun AppNavigation() {
-    var current by remember { mutableStateOf(Router.currentRoute) }
-    val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
+    val context = LocalContext.current
+    val activity = context as? Activity
 
-    // Firebase setup
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
+    val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
-    // State to determine where to go after startup
-    var startRoute by remember { mutableStateOf<String?>(null) }
-    var isChecking by remember { mutableStateOf(true) }
+    var initialized by remember { mutableStateOf(false) }
 
-    // 🚀 Perform startup auth check
+    // ✅ Determine starting route immediately at app open
     LaunchedEffect(Unit) {
         val user = auth.currentUser
         if (user == null) {
-            startRoute = Screen.Login.route
+            Router.resetTo(Screen.Login.route)
+            initialized = true
         } else if (!user.isEmailVerified) {
-            startRoute = Screen.EmailVerify.route
+            Router.resetTo(Screen.EmailVerify.route)
+            initialized = true
         } else {
             firestore.collection("users").document(user.uid)
                 .get()
                 .addOnSuccessListener { snapshot ->
-                    startRoute = if (snapshot.exists()) {
-                        Screen.Home.route
+                    if (snapshot.exists()) {
+                        Router.resetTo(Screen.Home.route)
                     } else {
-                        Screen.AccountSetup.route
+                        Router.resetTo(Screen.AccountSetup.route)
                     }
-                    Router.navigate(startRoute!!)
-                    current = startRoute!!
+                    initialized = true
                 }
                 .addOnFailureListener {
-                    startRoute = Screen.Login.route
-                    Router.navigate(Screen.Login.route)
-                    current = Screen.Login.route
+                    Router.resetTo(Screen.Login.route)
+                    initialized = true
                 }
         }
-        isChecking = false
     }
 
-    // 🔒 Prevent back navigation before setup or verification
-    BackHandler(enabled = current != Screen.Home.route) {
+    // 🔄 Show quick progress while verifying user state
+    if (!initialized) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val current = Router.currentRoute
+
+    // 🧭 Handle Android back navigation properly
+    BackHandler {
         when (current) {
-            Screen.EmailVerify.route,
-            Screen.AccountSetup.route,
-            Screen.Login.route,
-            Screen.Signup.route -> {
-                // Disable going back to avoid entering bottom nav routes prematurely
+            Screen.Signup.route, Screen.Login.route -> {
+                // Exit app on login/signup back press
+                activity?.finish()
             }
 
-            else -> Router.navigate(Screen.Home.route)
+            Screen.EmailVerify.route, Screen.AccountSetup.route -> {
+                // Disable back during auth flow
+            }
+
+            else -> {
+                // Normal navigation in the app
+                if (current != Screen.Home.route) {
+                    Router.navigate(Screen.Home.route)
+                } else {
+                    activity?.finish()
+                }
+            }
         }
     }
 
     Scaffold(
         bottomBar = {
-            if (current in listOf(
-                    Screen.Home.route,
-                    Screen.Marketplace.route,
-                    Screen.Portfolio.route,
-                    Screen.Watchlist.route
+            if (current !in listOf(
+                    Screen.Login.route,
+                    Screen.Signup.route,
+                    Screen.EmailVerify.route,
+                    Screen.AccountSetup.route
                 )
             ) {
                 Box(
@@ -85,10 +106,7 @@ actual fun AppNavigation() {
                 ) {
                     AppNavBar(
                         currentRoute = current,
-                        onItemClick = { route ->
-                            Router.navigate(route)
-                            current = route
-                        }
+                        onItemClick = { route -> Router.navigate(route) }
                     )
                 }
             }
@@ -100,20 +118,15 @@ actual fun AppNavigation() {
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            if (isChecking) {
-                CircularProgressIndicator()
-            } else {
-                when (current) {
-                    Screen.Signup.route -> SignupScreen()
-                    Screen.Login.route -> LoginScreen()
-                    Screen.EmailVerify.route -> EmailVerifyScreen()
-                    Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)
-                    Screen.Home.route -> HomeScreen()
-                    Screen.Marketplace.route -> MarketplaceScreen()
-                    Screen.Portfolio.route -> PortfolioScreen()
-                    Screen.Watchlist.route -> WatchlistScreen()
-                    else -> CircularProgressIndicator()
-                }
+            when (current) {
+                Screen.Signup.route -> SignupScreen()
+                Screen.Login.route -> LoginScreen()
+                Screen.EmailVerify.route -> EmailVerifyScreen()
+                Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)
+                Screen.Home.route -> HomeScreen()
+                Screen.Marketplace.route -> MarketplaceScreen()
+                Screen.Portfolio.route -> PortfolioScreen()
+                Screen.Watchlist.route -> WatchlistScreen()
             }
         }
     }
