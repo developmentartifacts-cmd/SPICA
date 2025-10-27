@@ -8,23 +8,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.gibson.spica.navigation.Router
+import com.gibson.spica.navigation.Screen
 
 @Composable
 fun AccountSetupSuccessScreen() {
-    val firestore = remember { FirebaseFirestore.getInstance() }
-    val auth = remember { FirebaseAuth.getInstance() }
+    val firestore = FirebaseFirestore.getInstance()
+    val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid
 
     var userData by remember { mutableStateOf<Map<String, Any>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // 🔁 Load Firestore user document when screen opens
-    LaunchedEffect(Unit) {
+    // Live load from Firestore
+    LaunchedEffect(userId) {
         if (userId == null) {
             errorMessage = "User not logged in"
             isLoading = false
@@ -32,18 +32,20 @@ fun AccountSetupSuccessScreen() {
         }
 
         firestore.collection("users").document(userId)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    userData = snapshot.data
-                } else {
-                    errorMessage = "No user document found"
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    errorMessage = e.localizedMessage
+                    isLoading = false
+                    return@addSnapshotListener
                 }
-                isLoading = false
-            }
-            .addOnFailureListener { e ->
-                errorMessage = e.localizedMessage
-                isLoading = false
+
+                if (snapshot != null && snapshot.exists()) {
+                    userData = snapshot.data
+                    isLoading = false
+                } else {
+                    errorMessage = "No user record found."
+                    isLoading = false
+                }
             }
     }
 
@@ -54,18 +56,12 @@ fun AccountSetupSuccessScreen() {
         contentAlignment = Alignment.Center
     ) {
         when {
-            isLoading -> {
-                CircularProgressIndicator()
-            }
+            isLoading -> CircularProgressIndicator()
 
             errorMessage != null -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "⚠️ ${errorMessage}",
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("⚠️ ${errorMessage}", color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(16.dp))
                     Button(onClick = { Router.navigate(Screen.AccountSetup.route) }) {
                         Text("Retry Setup")
                     }
@@ -74,40 +70,30 @@ fun AccountSetupSuccessScreen() {
 
             userData != null -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "✅ Account Setup Complete!",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("✅ Account Setup Complete!", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(16.dp))
 
-                    Text(
-                        text = "Welcome, ${userData?.get("firstName")} ${userData?.get("lastName")}",
-                        fontSize = 18.sp
-                    )
+                    Text("Welcome, ${userData?.get("firstName")} ${userData?.get("lastName")}", fontSize = 18.sp)
+                    Spacer(Modifier.height(8.dp))
 
-                    if (!userData?.get("bio").isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Bio: ${userData?.get("bio")}",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
-                        )
+                    Divider(Modifier.padding(vertical = 8.dp))
+
+                    listOf(
+                        "Username" to userData?.get("username"),
+                        "Email" to auth.currentUser?.email,
+                        "Phone" to userData?.get("phone"),
+                        "Country" to userData?.get("country"),
+                        "State" to userData?.get("state"),
+                        "Town" to userData?.get("town"),
+                        "Bio" to userData?.get("bio")
+                    ).forEach { (label, value) ->
+                        if (value != null && value.toString().isNotBlank()) {
+                            Text("$label: $value", fontSize = 16.sp)
+                            Spacer(Modifier.height(4.dp))
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Divider()
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Username: ${userData?.get("username") ?: "N/A"}")
-                    Text("Email: ${auth.currentUser?.email ?: "N/A"}")
-
-                    val countryCode = userData?.get("countryCode") ?: "N/A"
-                    val phone = userData?.get("phone") ?: "N/A"
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Phone: $countryCode $phone")
-
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
                     Button(
                         onClick = { Router.navigate(Screen.Home.route) },
                         modifier = Modifier.fillMaxWidth(0.6f)
