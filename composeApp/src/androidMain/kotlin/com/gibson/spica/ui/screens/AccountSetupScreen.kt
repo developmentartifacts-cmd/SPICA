@@ -8,35 +8,38 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gibson.spica.viewmodel.AccountSetupViewModel
-import kotlinx.coroutines.launch
-import network.chaintech.cmpcountrycodepicker.components.CountryPickerBasicTextField
-import network.chaintech.cmpcountrycodepicker.data.CountryData
+import network.chaintech.cmp_country_code_picker.picker.CountryPickerBasicTextField
+import network.chaintech.cmp_country_code_picker.model.CountryDetails
 
 @Composable
 fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() }) {
+    val currentStep = viewModel.currentStep
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
-    var currentStep by remember { mutableStateOf(1) }
-    val totalSteps = 3
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.fillMaxSize()
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            StepHeader(currentStep = currentStep, totalSteps = totalSteps)
+            StepHeader(
+                currentStep = currentStep,
+                totalSteps = 3,
+                title = when (currentStep) {
+                    1 -> "Your Name"
+                    2 -> "Bio Information"
+                    3 -> "Phone & Extras"
+                    else -> ""
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -53,48 +56,61 @@ fun AccountSetupScreen(viewModel: AccountSetupViewModel = remember { AccountSetu
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 if (currentStep > 1) {
-                    OutlinedButton(
-                        onClick = { currentStep-- },
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    TextButton(onClick = { viewModel.prevStep() }) {
                         Text("Back")
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                } else {
+                    Spacer(modifier = Modifier.width(64.dp))
                 }
 
                 Button(
-                    onClick = {
-                        if (currentStep < totalSteps) {
-                            currentStep++
-                        } else {
-                            coroutineScope.launch {
-                                viewModel.saveUserData()
-                                snackbarHostState.showSnackbar("Account setup completed!")
-                            }
+                    onClick = { viewModel.nextStep() },
+                    enabled = !viewModel.isLoading,
+                ) {
+                    Text(if (currentStep < 3) "Next" else "Finish")
+                }
+            }
+
+            if (viewModel.showConfirmDialog) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.showConfirmDialog = false },
+                    title = { Text("Confirm Setup") },
+                    text = { Text("Do you want to complete account setup?") },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.submitAccountSetup() }) {
+                            Text("Confirm")
                         }
                     },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(if (currentStep == totalSteps) "Finish" else "Next")
-                }
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.showConfirmDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            if (viewModel.message != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(viewModel.message!!, color = MaterialTheme.colorScheme.error)
             }
         }
     }
 }
 
-/* ---------------------- Step Header ---------------------- */
 @Composable
-private fun StepHeader(currentStep: Int, totalSteps: Int) {
-    Text(
-        text = "Step $currentStep of $totalSteps",
-        fontSize = 18.sp,
-        color = MaterialTheme.colorScheme.primary
-    )
+fun StepHeader(currentStep: Int, totalSteps: Int, title: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = currentStep / totalSteps.toFloat(),
+            modifier = Modifier.fillMaxWidth(0.8f)
+        )
+    }
 }
 
-/* ---------------------- Step 1: Names ---------------------- */
 @Composable
-private fun StepNames(viewModel: AccountSetupViewModel) {
+fun StepNames(viewModel: AccountSetupViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = viewModel.firstName,
@@ -102,80 +118,59 @@ private fun StepNames(viewModel: AccountSetupViewModel) {
             label = { Text("First Name *") },
             modifier = Modifier.fillMaxWidth()
         )
-
         OutlinedTextField(
             value = viewModel.secondName,
             onValueChange = { viewModel.secondName = it },
-            label = { Text("Second Name") },
+            label = { Text("Second Name (optional)") },
             modifier = Modifier.fillMaxWidth()
         )
-
         OutlinedTextField(
             value = viewModel.lastName,
             onValueChange = { viewModel.lastName = it },
             label = { Text("Last Name *") },
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
 
+@Composable
+fun StepBio(viewModel: AccountSetupViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = viewModel.username,
             onValueChange = { viewModel.username = it },
             label = { Text("Username *") },
             modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-/* ---------------------- Step 2: Bio ---------------------- */
-@Composable
-private fun StepBio(viewModel: AccountSetupViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = viewModel.bio,
             onValueChange = { viewModel.bio = it },
-            label = { Text("Bio") },
+            label = { Text("Bio / About you") },
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = VisualTransformation.None,
-            minLines = 3,
-            maxLines = 5
-        )
-
-        OutlinedTextField(
-            value = viewModel.postcode,
-            onValueChange = { viewModel.postcode = it },
-            label = { Text("Postcode") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            maxLines = 4
         )
     }
 }
 
-/* ---------------------- Step 3: Phone Picker ---------------------- */
 @Composable
-private fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
-    var selectedCountry by remember { mutableStateOf<CountryData?>(null) }
+fun StepPhoneExtra(viewModel: AccountSetupViewModel) {
+    var selectedCountry by remember { mutableStateOf<CountryDetails?>(null) }
 
-    CountryPickerBasicTextField(
-        mobileNumber = viewModel.phone,
-        defaultCountryCode = "ng",
-        onMobileNumberChange = { viewModel.phone = it },
-        onCountrySelected = { country: CountryData ->
-            selectedCountry = country
-            viewModel.countryName = country.name
-            viewModel.countryCode = country.countryPhoneCode
-        },
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text("Mobile Number") },
-        showCountryFlag = true,
-        showCountryPhoneCode = true,
-        showCountryName = true,
-        showCountryCode = false,
-        showArrowDropDown = true
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CountryPickerBasicTextField(
+            mobileNumber = viewModel.phone,
+            defaultCountryCode = "ng",
+            onMobileNumberChange = { viewModel.phone = it },
+            onCountrySelected = {
+                selectedCountry = it
+                viewModel.selectedCountryCode = it.countryPhoneCode
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Mobile Number") }
+        )
 
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = "Selected: ${selectedCountry?.name ?: viewModel.countryName.ifEmpty { "None" }}",
-        fontSize = 14.sp
-    )
+        if (selectedCountry != null) {
+            Text("Selected Country: ${selectedCountry!!.countryName} (${selectedCountry!!.countryPhoneCode})")
+        }
+    }
 }
