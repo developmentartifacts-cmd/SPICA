@@ -1,243 +1,155 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.ui.AppNavBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PortfolioScreen(
-    currentRoute: String?,
-    onItemClick: (String) -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
+fun PortfolioScreen() {
+    var selectedTab by remember { mutableStateOf("Posts") }
 
-    Scaffold(
-        containerColor = colorScheme.background,
-        topBar = { PortfolioTopBar() },
-        bottomBar = {
-            AppNavBar(
-                currentRoute = currentRoute,
-                onItemClick = onItemClick
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(colorScheme.background)
-        ) {
-            // ===== Cover Photo Placeholder =====
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(16.dp)
+    ) {
+        // 🪞 Profile Header
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .background(colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Cover Photo",
-                    color = colorScheme.onSurface.copy(alpha = 0.5f)
-                )
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(Color.DarkGray)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text("Gibson Ezeh", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("@gibson", color = Color.Gray, fontSize = 14.sp)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Creator • Thinker • Builder",
+                color = Color.LightGray,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+                StatItem("Followers", "2.3K")
+                StatItem("Following", "120")
+                StatItem("Spheres", "8")
             }
+        }
 
-            // ===== Profile Info Section =====
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .offset(y = (-40).dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Avatar
-                Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.onSurface.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
+        Spacer(Modifier.height(20.dp))
+
+        // 🔖 Tabs: Posts / Creations / Connections
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            listOf("Posts", "Creations", "Connections").forEach { tab ->
+                TextButton(onClick = { selectedTab = tab }) {
                     Text(
-                        text = "👤",
-                        fontSize = 32.sp,
-                        color = colorScheme.onSurface.copy(alpha = 0.7f)
+                        text = tab,
+                        color = if (selectedTab == tab) Color.White else Color.Gray,
+                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                     )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Username
-                Text(
-                    text = "@Username",
-                    color = colorScheme.onBackground,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Bio placeholder
-                Text(
-                    text = "This is your bio — who you are, what you create, and what drives you.",
-                    color = colorScheme.onBackground.copy(alpha = 0.7f),
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Stats Row
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IdentityStat("Posts", "120")
-                    IdentityStat("Spheres", "8")
-                    IdentityStat("Followers", "2.3k")
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
             }
+        }
 
-            // ===== Tabs Placeholder =====
+        Spacer(Modifier.height(12.dp))
+
+        // 🧩 Tab content
+        when (selectedTab) {
+            "Posts" -> UserPosts()
+            "Creations" -> UserCreations()
+            "Connections" -> UserConnections()
+        }
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(label, color = Color.Gray, fontSize = 12.sp)
+    }
+}
+
+@Composable
+fun UserPosts() {
+    val posts = listOf(
+        "The future of creation belongs to collaboration.",
+        "I believe in building tools that amplify human potential.",
+        "SPICA is a new layer of the internet — for ideas, not just information."
+    )
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(posts) { post ->
+            Surface(
+                color = Color(0xFF121212),
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(
+                    text = post,
+                    color = Color.White,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UserCreations() {
+    val creations = listOf("EchoLens", "NeuroType", "GreenSpark", "SPICA")
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(creations) { creation ->
+            Surface(
+                color = Color(0xFF121212),
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(creation, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Project or collaboration", color = Color.Gray, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UserConnections() {
+    val connections = listOf("Amaka Obi", "John Kintu", "Leila Abebe", "Chris Mensah")
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(connections) { name ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .border(1.dp, Color.DarkGray, shape = MaterialTheme.shapes.small)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Stream", color = colorScheme.onSurface.copy(alpha = 0.9f))
-                Text("Creations", color = colorScheme.onSurface.copy(alpha = 0.5f))
-                Text("Connections", color = colorScheme.onSurface.copy(alpha = 0.5f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ===== Posts / Content Placeholder =====
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                items(6) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.surface)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Post or creation placeholder #$it",
-                            color = colorScheme.onSurface,
-                            fontSize = 16.sp
-                        )
-                    }
+                Text(name, color = Color.White)
+                TextButton(onClick = { /* TODO: navigate to user's portfolio */ }) {
+                    Text("View", color = Color.Gray)
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PortfolioTopBar() {
-    val colorScheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        color = colorScheme.background,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // [Avatar]
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.onSurface.copy(alpha = 0.2f))
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        // TODO: profile quick menu
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text("👤", fontSize = 18.sp)
-            }
-
-            // Center: Username
-            Text(
-                text = "@Username",
-                color = colorScheme.onBackground,
-                fontWeight = FontWeight.Medium,
-                fontSize = 18.sp
-            )
-
-            // ⋮ More options
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "Options",
-                tint = colorScheme.onBackground,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        // TODO: show settings menu
-                    }
-            )
-        }
-    }
-}
-
-@Composable
-private fun IdentityStat(label: String, value: String) {
-    val colorScheme = MaterialTheme.colorScheme
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            color = colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
-        )
-        Text(
-            text = label,
-            color = colorScheme.onBackground.copy(alpha = 0.6f),
-            fontSize = 13.sp
-        )
     }
 }
