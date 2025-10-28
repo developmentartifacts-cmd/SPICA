@@ -1,129 +1,160 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gibson.spica.viewmodel.MarketplaceViewModel
+import com.gibson.spica.viewmodel.RarityFilter
+import com.gibson.spica.viewmodel.SortOption
+import com.gibson.spica.model.SphereAsset
 
 @Composable
-fun MarketplaceScreen() {
-    val spheres = remember { demoSpheres }
+fun MarketplaceScreen(
+    viewModel: MarketplaceViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    val showMenu = remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(horizontal = 16.dp)
-    ) {
-        // Top bar title
-        Text(
-            text = "SPHERES",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
-            modifier = Modifier.padding(top = 20.dp, bottom = 10.dp)
-        )
-
-        // Search/Filter stub
-        OutlinedTextField(
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("Search worlds or industries...", color = Color.Gray) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.White,
-                unfocusedBorderColor = Color.DarkGray,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Sphere", color = MaterialTheme.colorScheme.primary) },
+                actions = {
+                    IconButton(onClick = { showMenu.value = true }) {
+                        Icon(Icons.Filled.FilterList, contentDescription = "Filter and Sort")
+                    }
+                    // Filter Dropdown
+                    MarketplaceFilterMenu(
+                        showMenu = showMenu,
+                        selectedSort = state.selectedSort,
+                        selectedRarity = state.selectedRarity,
+                        onSortSelect = viewModel::onSortChange,
+                        onRaritySelect = viewModel::onFilterChange
+                    )
+                }
             )
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // List of worlds (Spheres)
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            items(spheres) { sphere ->
-                SphereCard(sphere)
-            }
-        }
-
-        // Create Sphere button
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 80.dp, end = 16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            FloatingActionButton(
-                onClick = { /* TODO: Navigate to Sphere creation */ },
-                containerColor = Color.White,
-                contentColor = Color.Black
+        },
+        content = { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Sphere")
+                if (state.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                } else if (state.errorMessage != null) {
+                    Text(text = "Error: ${state.errorMessage}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                } else {
+                    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(state.assets, key = { it.id }) { asset ->
+                            SphereAssetCard(asset = asset)
+                        }
+                    }
+                }
             }
+        }
+    )
+}
+
+@Composable
+fun MarketplaceFilterMenu(
+    showMenu: MutableState<Boolean>,
+    selectedSort: SortOption,
+    selectedRarity: RarityFilter,
+    onSortSelect: (SortOption) -> Unit,
+    onRaritySelect: (RarityFilter) -> Unit
+) {
+    DropdownMenu(
+        expanded = showMenu.value,
+        onDismissRequest = { showMenu.value = false }
+    ) {
+        // --- Sort Options ---
+        Text("Sort By", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        SortOption.entries.forEach { sort ->
+            DropdownMenuItem(
+                text = { Text(sort.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }) },
+                onClick = {
+                    onSortSelect(sort)
+                    showMenu.value = false
+                },
+                trailingIcon = { if (sort == selectedSort) Icon(Icons.Default.Star, contentDescription = "Selected") }
+            )
+        }
+        Divider()
+        
+        // --- Rarity Filter ---
+        Text("Filter Rarity", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        RarityFilter.entries.forEach { rarity ->
+            DropdownMenuItem(
+                text = { Text(rarity.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                onClick = {
+                    onRaritySelect(rarity)
+                    showMenu.value = false
+                },
+                trailingIcon = { if (rarity == selectedRarity) Icon(Icons.Default.Star, contentDescription = "Selected") }
+            )
         }
     }
 }
 
 @Composable
-fun SphereCard(sphere: DemoSphere) {
-    Surface(
-        color = Color(0xFF121212),
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { /* TODO: Navigate into Sphere details */ }
+fun SphereAssetCard(asset: SphereAsset) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { /* Navigate to Asset Detail */ },
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = sphere.name,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = sphere.description,
-                color = Color.LightGray,
-                fontSize = 13.sp
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "${sphere.members} members • ${sphere.category}",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Asset Icon Placeholder
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(end = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Use a simple SVG or text icon based on the asset type
+                Text("✨", fontSize = 24.sp)
+            }
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(asset.title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    "Rarity: ${asset.rarityScore}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            
+            // Price Tag
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = "$${asset.price}K",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }
-
-// --- Mock data ---
-data class DemoSphere(
-    val name: String,
-    val description: String,
-    val members: Int,
-    val category: String
-)
-
-private val demoSpheres = listOf(
-    DemoSphere("OpenScience", "Where researchers and thinkers share discoveries.", 4821, "Science"),
-    DemoSphere("AfroFuture", "A digital renaissance of African creators and innovators.", 3021, "Culture"),
-    DemoSphere("EcoGenesis", "Reimagining sustainability and green tech.", 2708, "Environment"),
-    DemoSphere("MetaCrafters", "Builders and designers shaping the virtual worlds.", 1198, "Technology")
-)
