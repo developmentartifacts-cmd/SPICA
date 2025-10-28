@@ -2,161 +2,128 @@ package com.gibson.spica.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.ui.AppNavBar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceScreen(
-    currentRoute: String?,
-    onItemClick: (String) -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
+fun MarketplaceScreen() {
+    val spheres = remember { demoSpheres }
 
-    Scaffold(
-        containerColor = colorScheme.background,
-        topBar = { MarketplaceTopBar() },
-        bottomBar = {
-            AppNavBar(
-                currentRoute = currentRoute,
-                onItemClick = onItemClick
-            )
-        }
-    ) { innerPadding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(horizontal = 16.dp)
+    ) {
+        // Top bar title
+        Text(
+            text = "SPHERES",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            modifier = Modifier.padding(top = 20.dp, bottom = 10.dp)
+        )
+
+        // Search/Filter stub
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
+            placeholder = { Text("Search worlds or industries...", color = Color.Gray) },
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(colorScheme.background)
-        ) {
-            // ===== Featured Spheres Carousel Placeholder =====
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(colorScheme.surface)
-                    .height(150.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "🌐 Featured Spheres Carousel",
-                    color = colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 16.sp
-                )
-            }
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.DarkGray,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
+        )
 
-            // ===== Sphere List =====
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        Spacer(Modifier.height(16.dp))
+
+        // List of worlds (Spheres)
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            items(spheres) { sphere ->
+                SphereCard(sphere)
+            }
+        }
+
+        // Create Sphere button
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 80.dp, end = 16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = { /* TODO: Navigate to Sphere creation */ },
+                containerColor = Color.White,
+                contentColor = Color.Black
             ) {
-                items(10) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.surface)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Sphere placeholder #$it",
-                            color = colorScheme.onSurface,
-                            fontSize = 16.sp
-                        )
-                    }
-                }
+                Icon(Icons.Default.Add, contentDescription = "Create Sphere")
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MarketplaceTopBar() {
-    val colorScheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
-
+fun SphereCard(sphere: DemoSphere) {
     Surface(
+        color = Color(0xFF121212),
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
-        color = colorScheme.background,
-        shadowElevation = 0.dp
+            .clickable { /* TODO: Navigate into Sphere details */ }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // ☄️ SPICA Sphere title
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Public,
-                    contentDescription = null,
-                    tint = colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "SPICA Sphere",
-                    color = colorScheme.onBackground,
-                    fontSize = 18.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                )
-            }
-
-            // 🔍 Filter + ⚙️ Settings
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FilterList,
-                    contentDescription = "Filter",
-                    tint = colorScheme.onBackground.copy(alpha = 0.8f),
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
-                            // TODO: handle filter click
-                        }
-                )
-
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = colorScheme.onBackground.copy(alpha = 0.8f),
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
-                            // TODO: handle settings click
-                        }
-                )
-            }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = sphere.name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = sphere.description,
+                color = Color.LightGray,
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "${sphere.members} members • ${sphere.category}",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
         }
     }
 }
+
+// --- Mock data ---
+data class DemoSphere(
+    val name: String,
+    val description: String,
+    val members: Int,
+    val category: String
+)
+
+private val demoSpheres = listOf(
+    DemoSphere("OpenScience", "Where researchers and thinkers share discoveries.", 4821, "Science"),
+    DemoSphere("AfroFuture", "A digital renaissance of African creators and innovators.", 3021, "Culture"),
+    DemoSphere("EcoGenesis", "Reimagining sustainability and green tech.", 2708, "Environment"),
+    DemoSphere("MetaCrafters", "Builders and designers shaping the virtual worlds.", 1198, "Technology")
+)
