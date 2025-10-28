@@ -1,151 +1,126 @@
 package com.gibson.spica.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Expand
-import androidx.compose.material.icons.filled.RemoveRedEye
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.ui.AppNavBar
+import kotlin.math.cos
+import kotlin.math.sin
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchlistScreen(
-    currentRoute: String?,
-    onItemClick: (String) -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
+fun WatchlistScreen() {
+    val orbitItems = remember {
+        listOf(
+            "SPICA" to "Sphere",
+            "Gibson Ezeh" to "Identity",
+            "Creative Africa" to "Sphere",
+            "Luna K." to "Identity",
+            "NeuroType" to "Project",
+            "EchoLens" to "Project"
+        )
+    }
 
-    Scaffold(
-        containerColor = colorScheme.background,
-        topBar = { WatchlistTopBar() },
-        bottomBar = {
-            AppNavBar(
-                currentRoute = currentRoute,
-                onItemClick = onItemClick
-            )
-        }
-    ) { innerPadding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "Your Orbit",
+            color = Color.White,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "Everything you follow — visualized as your personal universe.",
+            color = Color.Gray,
+            fontSize = 13.sp
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Box(
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(colorScheme.background)
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center
         ) {
-            // ===== Orbit Visual Map Placeholder =====
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(colorScheme.surface)
-                    .height(220.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "🪐 Orbit Visual Map Placeholder",
-                    color = colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 16.sp
-                )
-            }
+            OrbitMap(orbitItems)
+        }
 
-            // ===== Recent Signals List =====
-            Text(
-                text = "Recent Signals",
-                color = colorScheme.onBackground,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                items(6) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.surface)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Signal update placeholder #$it",
-                            color = colorScheme.onSurface,
-                            fontSize = 16.sp
-                        )
-                    }
+        Surface(
+            color = Color(0xFF121212),
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Recent Signals", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                listOf(
+                    "Gibson Ezeh posted a new Echo in SPICA Sphere",
+                    "NeuroType launched beta collaboration access",
+                    "Luna K. followed you",
+                    "Creative Africa Sphere trending"
+                ).forEach {
+                    Text(it, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WatchlistTopBar() {
-    val colorScheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
+fun OrbitMap(items: List<Pair<String, String>>) {
+    val orbitColors = listOf(
+        Color.White,
+        Color.Gray,
+        Color.LightGray
+    )
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        color = colorScheme.background,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 👁️ Left: "Your Orbit" label
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.RemoveRedEye,
-                    contentDescription = null,
-                    tint = colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Your Orbit",
-                    color = colorScheme.onBackground,
-                    fontSize = 18.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+    Canvas(modifier = Modifier.size(280.dp)) {
+        val center = Offset(size.width / 2, size.height / 2)
+        val radiusStep = 35.dp.toPx()
+        val itemCount = items.size
+
+        drawIntoCanvas {
+            // Draw concentric orbit rings
+            for (i in 1..3) {
+                drawCircle(
+                    color = Color.DarkGray.copy(alpha = 0.4f),
+                    radius = i * radiusStep,
+                    center = center,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
                 )
             }
 
-            // 🔭 Right: "Expand" button (discover new orbits)
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Expand,
-                    contentDescription = "Expand Orbit",
-                    tint = colorScheme.onBackground.copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
-                            // TODO: open "Expand My Orbit" discovery screen
-                        }
+            // Draw planets
+            items.forEachIndexed { index, (name, type) ->
+                val orbitLevel = (index % 3) + 1
+                val angle = (index * (360f / itemCount)) * (Math.PI / 180f)
+                val planetX = center.x + cos(angle).toFloat() * (orbitLevel * radiusStep)
+                val planetY = center.y + sin(angle).toFloat() * (orbitLevel * radiusStep)
+
+                drawCircle(
+                    color = orbitColors[index % orbitColors.size],
+                    radius = 10.dp.toPx(),
+                    center = Offset(planetX, planetY)
                 )
             }
         }
