@@ -1,155 +1,172 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gibson.spica.viewmodel.PortfolioViewModel
+import com.gibson.spica.viewmodel.AuthViewModel // Used for logout functionality
 
 @Composable
-fun PortfolioScreen() {
-    var selectedTab by remember { mutableStateOf("Posts") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(16.dp)
-    ) {
-        // 🪞 Profile Header
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Box(
+fun PortfolioScreen(
+    viewModel: PortfolioViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel() // Use AuthVM for logout
+) {
+    val state by viewModel.state.collectAsState()
+    val identity = state.identity
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Identity", color = MaterialTheme.colorScheme.primary) },
+                actions = {
+                    IconButton(onClick = { authViewModel.logout() }) {
+                        Icon(Icons.Filled.Logout, contentDescription = "Logout")
+                    }
+                }
+            )
+        },
+        content = { padding ->
+            LazyColumn(
                 modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .background(Color.DarkGray)
-            )
-            Spacer(Modifier.height(12.dp))
-            Text("Gibson Ezeh", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("@gibson", color = Color.Gray, fontSize = 14.sp)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Creator • Thinker • Builder",
-                color = Color.LightGray,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                StatItem("Followers", "2.3K")
-                StatItem("Following", "120")
-                StatItem("Spheres", "8")
-            }
-        }
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // --- User Profile Header ---
+                item {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.padding(32.dp))
+                    } else if (identity != null) {
+                        IdentityHeader(identity = identity)
+                    } else if (state.errorMessage != null) {
+                        Text("Error: ${state.errorMessage}", color = MaterialTheme.colorScheme.error)
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
 
-        Spacer(Modifier.height(20.dp))
-
-        // 🔖 Tabs: Posts / Creations / Connections
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf("Posts", "Creations", "Connections").forEach { tab ->
-                TextButton(onClick = { selectedTab = tab }) {
+                // --- Owned Assets Section ---
+                item {
                     Text(
-                        text = tab,
-                        color = if (selectedTab == tab) Color.White else Color.Gray,
-                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                        text = "Owned Assets (${state.ownedAssets.size})",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
                     )
                 }
+
+                item {
+                    // Use a grid for a visually pleasing asset gallery
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.heightIn(max = 600.dp) // Limit height for scrollable content
+                    ) {
+                        items(state.ownedAssets, key = { it.id }) { asset ->
+                            OwnedAssetCard(asset.title)
+                        }
+                    }
+                }
             }
         }
-
-        Spacer(Modifier.height(12.dp))
-
-        // 🧩 Tab content
-        when (selectedTab) {
-            "Posts" -> UserPosts()
-            "Creations" -> UserCreations()
-            "Connections" -> UserConnections()
-        }
-    }
-}
-
-@Composable
-fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        Text(label, color = Color.Gray, fontSize = 12.sp)
-    }
-}
-
-@Composable
-fun UserPosts() {
-    val posts = listOf(
-        "The future of creation belongs to collaboration.",
-        "I believe in building tools that amplify human potential.",
-        "SPICA is a new layer of the internet — for ideas, not just information."
     )
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(posts) { post ->
-            Surface(
-                color = Color(0xFF121212),
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text(
-                    text = post,
-                    color = Color.White,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+}
+
+@Composable
+fun IdentityHeader(identity: com.gibson.spica.model.IdentityData) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Profile Picture Placeholder
+        Surface(
+            modifier = Modifier.size(96.dp).clip(CircleShape),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Icon(
+                Icons.Filled.Person,
+                contentDescription = "Profile Photo",
+                modifier = Modifier.size(64.dp).padding(16.dp),
+                tint = MaterialTheme.colorScheme.secondary
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        
+        Text(
+            text = identity.displayName,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "@${identity.username}",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(Modifier.height(8.dp))
+        
+        // Tagline - the user's primary identity statement
+        Text(
+            text = identity.tagline,
+            fontSize = 16.sp,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        )
+        
+        Spacer(Modifier.height(16.dp))
+        
+        // Stats Row (Orbits & Spheres)
+        Row(
+            modifier = Modifier.fillMaxWidth(0.8f),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            StatPill(count = identity.connectedOrbits, label = "Orbits")
+            StatPill(count = identity.sphereCount, label = "Spheres")
         }
     }
 }
 
 @Composable
-fun UserCreations() {
-    val creations = listOf("EchoLens", "NeuroType", "GreenSpark", "SPICA")
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(creations) { creation ->
-            Surface(
-                color = Color(0xFF121212),
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(creation, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Project or collaboration", color = Color.Gray, fontSize = 12.sp)
-                }
-            }
-        }
+fun StatPill(count: Long, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = count.toString(), fontWeight = FontWeight.Black, fontSize = 20.sp)
+        Text(text = label, color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
     }
 }
 
 @Composable
-fun UserConnections() {
-    val connections = listOf("Amaka Obi", "John Kintu", "Leila Abebe", "Chris Mensah")
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(connections) { name ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, Color.DarkGray, shape = MaterialTheme.shapes.small)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(name, color = Color.White)
-                TextButton(onClick = { /* TODO: navigate to user's portfolio */ }) {
-                    Text("View", color = Color.Gray)
-                }
-            }
+fun OwnedAssetCard(title: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth().height(120.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(Icons.Filled.Star, contentDescription = null, tint = Color.White)
+            Text(title, fontWeight = FontWeight.Medium, maxLines = 2, fontSize = 14.sp)
         }
     }
 }
