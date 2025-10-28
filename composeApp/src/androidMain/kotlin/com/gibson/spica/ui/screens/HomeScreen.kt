@@ -1,117 +1,122 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gibson.spica.viewmodel.HomeViewModel
+import com.gibson.spica.viewmodel.StreamItem
 
 @Composable
-fun HomeScreen() {
-    val posts = remember { demoPosts }   // Mocked stream items
+fun HomeScreen(
+    viewModel: HomeViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(horizontal = 16.dp)
-    ) {
-        // Top Bar
-        Text(
-            text = "SPICA STREAM",
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
-            modifier = Modifier.padding(top = 20.dp, bottom = 10.dp)
-        )
-
-        // Echo Composer (Post input stub)
-        OutlinedTextField(
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("Share something with the world...", color = Color.Gray) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color.Transparent),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.White,
-                unfocusedBorderColor = Color.DarkGray,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
-            )
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Feed List
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            items(posts) { post ->
-                EchoCard(post)
-            }
-        }
-
-        // Floating Action Button for New Echo
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 80.dp, end = 16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            FloatingActionButton(
-                onClick = { /* TODO: open composer dialog */ },
-                containerColor = Color.White,
-                contentColor = Color.Black
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Stream", color = MaterialTheme.colorScheme.primary) }) },
+        content = { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Post")
+                if (state.isLoading) {
+                    // Central loading indicator for initial fetch
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else if (state.errorMessage != null) {
+                    // Error state feedback
+                    Text(
+                        text = "Error loading stream: ${state.errorMessage}",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(state.feed, key = { it.asset.id }) { item ->
+                            StreamAssetCard(
+                                item = item,
+                                onEchoToggle = { isEchoed ->
+                                    viewModel.toggleEcho(item.asset.id, isEchoed)
+                                }
+                            )
+                            Divider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
+                        }
+                    }
+                }
+            }
+        }
+    )
+}
+
+/**
+ * A sleek, high-contrast card for displaying an asset in the stream.
+ */
+@Composable
+fun StreamAssetCard(item: StreamItem, onEchoToggle: (Boolean) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent, // Transparent card for black background
+            contentColor = MaterialTheme.colorScheme.onBackground
+        )
+    ) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            // Asset Title and Creator Username
+            Text(
+                text = item.asset.title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Creator: @${item.asset.createdByUserId}",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Engagement Row (Echoes)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Echo Button (Heart Icon)
+                Icon(
+                    imageVector = if (item.isEchoedByMe) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Toggle Echo",
+                    tint = if (item.isEchoedByMe) Color(0xFFD32F2F) else MaterialTheme.colorScheme.secondary, // Red for echoed
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { onEchoToggle(item.isEchoedByMe) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // Real-time Echo Count from Realtime DB
+                Text(
+                    text = "${item.echoCount} Echoes",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
     }
 }
-
-@Composable
-fun EchoCard(post: DemoPost) {
-    Surface(
-        color = Color(0xFF121212),
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = post.author,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = post.content,
-                color = Color.LightGray,
-                fontSize = 14.sp
-            )
-        }
-    }
-}
-
-// --- Mock data until backend connects ---
-data class DemoPost(val author: String, val content: String)
-
-private val demoPosts = listOf(
-    DemoPost("Ava", "Humanity is building the next layer of consciousness."),
-    DemoPost("Kofi", "SPICA feels like a universe, not an app."),
-    DemoPost("Liam", "Every post is a signal. Every person is a world."),
-    DemoPost("Aisha", "Art, code, philosophy — all merge here.")
-)
