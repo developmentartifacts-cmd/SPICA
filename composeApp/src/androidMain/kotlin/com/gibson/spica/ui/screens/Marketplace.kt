@@ -1,74 +1,61 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.gibson.spica.ui.theme.SpicaTheme
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun MarketplaceScreen() {
-    // Placeholder universe items
-    val sphereItems = List(20) { "Portal #${it + 1}" }
+    var searchQuery by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Search bar
-        OutlinedTextField(
-            value = "",
-            onValueChange = { /* TODO: search */ },
-            placeholder = { Text("Find anything… or anyone") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = MaterialTheme.colorScheme.onBackground,
-                placeholderColor = MaterialTheme.colorScheme.secondary,
-                containerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.secondary
-            ),
-            shape = RoundedCornerShape(12.dp)
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(
+            text = "Sphere",
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Grid of “portals”
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Search the Sphere...") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.secondary,
+                textColor = MaterialTheme.colorScheme.onBackground,
+                placeholderColor = MaterialTheme.colorScheme.secondary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(sphereItems) { item ->
+            items(20) { index ->
                 Card(
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clickable { /* TODO: open portal */ },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = item,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "Sphere Item #$index",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "This is a modular item in your SPICA Sphere. Discover, explore, create.",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
