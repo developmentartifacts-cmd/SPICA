@@ -1,128 +1,117 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.cos
-import kotlin.math.sin
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gibson.spica.viewmodel.WatchlistViewModel
+import com.gibson.spica.model.SphereAsset
 
 @Composable
-fun WatchlistScreen() {
-    val orbitItems = remember {
-        listOf(
-            "SPICA" to "Sphere",
-            "Gibson Ezeh" to "Identity",
-            "Creative Africa" to "Sphere",
-            "Luna K." to "Identity",
-            "NeuroType" to "Project",
-            "EchoLens" to "Project"
-        )
-    }
+fun WatchlistScreen(
+    viewModel: WatchlistViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            "Your Orbit",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Everything you follow — visualized as your personal universe.",
-            color = Color.Gray,
-            fontSize = 13.sp
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            OrbitMap(orbitItems)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Surface(
-            color = Color(0xFF121212),
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Recent Signals", color = Color.White, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                listOf(
-                    "Gibson Ezeh posted a new Echo in SPICA Sphere",
-                    "NeuroType launched beta collaboration access",
-                    "Luna K. followed you",
-                    "Creative Africa Sphere trending"
-                ).forEach {
-                    Text(it, color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(vertical = 4.dp))
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Orbit", color = MaterialTheme.colorScheme.primary) }) },
+        content = { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                if (state.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                } else if (state.errorMessage != null) {
+                    Text(text = "Error: ${state.errorMessage}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                } else if (state.orbitedAssets.isEmpty()) {
+                    // Empty state for Orbit
+                    EmptyOrbitMessage()
+                } else {
+                    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(state.orbitedAssets, key = { it.id }) { asset ->
+                            OrbitAssetRow(
+                                asset = asset,
+                                onRemove = { viewModel.unorbitAsset(asset.id) }
+                            )
+                        }
+                    }
                 }
+            }
+        }
+    )
+}
+
+@Composable
+fun OrbitAssetRow(asset: SphereAsset, onRemove: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(asset.title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    "Price: $${asset.price}K | Created by: @${asset.createdByUserId}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1
+                )
+            }
+            
+            // Remove from Orbit Button
+            IconButton(onClick = onRemove) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Remove from Orbit",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
 }
 
 @Composable
-fun OrbitMap(items: List<Pair<String, String>>) {
-    val orbitColors = listOf(
-        Color.White,
-        Color.Gray,
-        Color.LightGray
-    )
-
-    Canvas(modifier = Modifier.size(280.dp)) {
-        val center = Offset(size.width / 2, size.height / 2)
-        val radiusStep = 35.dp.toPx()
-        val itemCount = items.size
-
-        drawIntoCanvas {
-            // Draw concentric orbit rings
-            for (i in 1..3) {
-                drawCircle(
-                    color = Color.DarkGray.copy(alpha = 0.4f),
-                    radius = i * radiusStep,
-                    center = center,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
-                )
-            }
-
-            // Draw planets
-            items.forEachIndexed { index, (name, type) ->
-                val orbitLevel = (index % 3) + 1
-                val angle = (index * (360f / itemCount)) * (Math.PI / 180f)
-                val planetX = center.x + cos(angle).toFloat() * (orbitLevel * radiusStep)
-                val planetY = center.y + sin(angle).toFloat() * (orbitLevel * radiusStep)
-
-                drawCircle(
-                    color = orbitColors[index % orbitColors.size],
-                    radius = 10.dp.toPx(),
-                    center = Offset(planetX, planetY)
-                )
-            }
-        }
+fun EmptyOrbitMessage() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Filled.List,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Your Orbit is Empty.",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Explore the Sphere to find assets to track.",
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        )
     }
 }
