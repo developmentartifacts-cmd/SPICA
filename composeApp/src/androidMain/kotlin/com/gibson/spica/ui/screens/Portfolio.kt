@@ -7,41 +7,28 @@ import androidx.compose.ui.unit.dp
 import com.gibson.spica.ui.components.SpicaFrame
 
 @Composable
-fun PortfolioScreen() {
+fun WatchlistScreen() {
     SpicaFrame {
         Text(
-            "Identity",
+            "Orbit",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(Modifier.height(16.dp))
 
-        // Example user info layout
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Your Profile", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(4.dp))
-                Text("Display your creations, roles, and interests.")
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        repeat(3) {
+        // Example following / saved items
+        repeat(5) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                 shape = MaterialTheme.shapes.medium
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Portfolio Item ${it + 1}", style = MaterialTheme.typography.titleSmall)
-                    Text("Work, contribution, or project overview.", style = MaterialTheme.typography.bodySmall)
+                    Text("Watched Topic ${it + 1}", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Tracking growth, updates, or new releases.", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
