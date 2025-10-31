@@ -9,7 +9,8 @@ import androidx.compose.runtime.setValue
  * Works like a lightweight NavHost with Compose state.
  */
 object Router {
-    var currentRoute: String by mutableStateOf(Screen.Login.route)
+    // 🟢 Default route: Splash Screen (first screen seen on app open)
+    var currentRoute: String by mutableStateOf(Screen.Splash.route)
         private set
 
     fun navigate(route: String) {
