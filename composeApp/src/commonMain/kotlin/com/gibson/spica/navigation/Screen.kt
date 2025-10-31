@@ -1,18 +1,16 @@
 package com.gibson.spica.navigation
 
-/**
- * Represents all navigable routes in SPICA.
- * Used by Router and NavigationModel.
- */
 sealed class Screen(val route: String) {
 
-    // 🔐 Authentication Flow
+    // 🚀 Startup & Auth Flow
+    object Splash : Screen("splash")
+    object Welcome : Screen("welcome")
     object Signup : Screen("signup")
     object Login : Screen("login")
     object EmailVerify : Screen("email_verify")
     object AccountSetup : Screen("account_setup")
 
-    // 🏠 Main App Screens
+    // 🌌 Main App Screens
     object Home : Screen("home")
     object Marketplace : Screen("marketplace")
     object Portfolio : Screen("portfolio")
@@ -20,6 +18,8 @@ sealed class Screen(val route: String) {
 
     companion object {
         fun fromRoute(route: String?): Screen? = when (route) {
+            Splash.route -> Splash
+            Welcome.route -> Welcome
             Signup.route -> Signup
             Login.route -> Login
             EmailVerify.route -> EmailVerify
