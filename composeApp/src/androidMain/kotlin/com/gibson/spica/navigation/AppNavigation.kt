@@ -2,8 +2,8 @@ package com.gibson.spica.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,19 +19,23 @@ actual fun AppNavigation() {
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
 
+    // Tracks where user should start
     var startDestination by remember { mutableStateOf<String?>(null) }
+
+    // Current navigation state
     val current = Router.currentRoute
     val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
-    // 🔹 Check authentication and Firestore document once on app open
+    // 🔹 Initial user + Firestore check
     LaunchedEffect(Unit) {
         val user = auth.currentUser
         if (user == null) {
-            startDestination = Screen.Login.route
+            startDestination = Screen.Splash.route
+            Router.navigate(Screen.Splash.route)
         } else if (!user.isEmailVerified) {
             startDestination = Screen.EmailVerify.route
+            Router.navigate(Screen.EmailVerify.route)
         } else {
-            // ✅ Check if account setup exists
             firestore.collection("users").document(user.uid)
                 .get()
                 .addOnSuccessListener { doc ->
@@ -47,12 +51,10 @@ actual fun AppNavigation() {
                     Router.navigate(Screen.Login.route)
                 }
         }
-        // Fallback for quick UI feedback
-        startDestination?.let { Router.navigate(it) }
     }
 
-    // 🕓 Show loading while deciding
-    if (startDestination == null) {
+    // 🕓 Loading indicator while deciding route
+    if (startDestination == null && current.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -62,15 +64,19 @@ actual fun AppNavigation() {
         return
     }
 
-    // 🔙 Prevent navigating back to home until logged in and verified
+    // 🔙 Prevent unwanted back navigation into auth screens
     BackHandler(enabled = current != Screen.Home.route) {
-        if (current != Screen.Login.route && current != Screen.Signup.route)
+        if (current !in listOf(Screen.Login.route, Screen.Signup.route, Screen.Welcome.route)) {
             Router.navigate(Screen.Home.route)
+        }
     }
 
+    // 🔧 Scaffold with bottom nav control
     Scaffold(
         bottomBar = {
             if (current !in listOf(
+                    Screen.Splash.route,
+                    Screen.Welcome.route,
                     Screen.Login.route,
                     Screen.Signup.route,
                     Screen.EmailVerify.route,
@@ -83,24 +89,30 @@ actual fun AppNavigation() {
                         .padding(bottom = 5.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    AppNavBar(currentRoute = current, onItemClick = { route ->
-                        Router.navigate(route)
-                    })
+                    AppNavBar(
+                        currentRoute = current,
+                        onItemClick = { route -> Router.navigate(route) }
+                    )
                 }
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .padding(padding),
             contentAlignment = Alignment.Center
         ) {
             when (current) {
+                // 🪄 Startup & Auth
+                Screen.Splash.route -> SplashScreen()
+                Screen.Welcome.route -> WelcomeScreen()
                 Screen.Signup.route -> SignupScreen()
                 Screen.Login.route -> LoginScreen()
                 Screen.EmailVerify.route -> EmailVerifyScreen()
                 Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)
+
+                // 🌌 Main Screens
                 Screen.Home.route -> HomeScreen()
                 Screen.Marketplace.route -> MarketplaceScreen()
                 Screen.Portfolio.route -> PortfolioScreen()
