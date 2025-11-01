@@ -1,4 +1,4 @@
-package com.gibson.spica.model
+package com.gibson.spica.media
 
 /**
  * Platform-independent file model.
