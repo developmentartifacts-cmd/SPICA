@@ -2,7 +2,7 @@ package com.gibson.spica.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gibson.spica.model.PlatformFile
+import com.gibson.spica.media.PlatformFile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
