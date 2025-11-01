@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
-import com.gibson.spica.model.PlatformFile
+import com.gibson.spica.media.PlatformFile
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
