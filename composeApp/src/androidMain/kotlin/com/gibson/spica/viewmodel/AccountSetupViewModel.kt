@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.gibson.spica.viewmodel
 
 import androidx.compose.runtime.*
