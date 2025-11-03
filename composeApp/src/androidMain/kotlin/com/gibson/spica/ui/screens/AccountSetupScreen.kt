@@ -4,19 +4,15 @@ package com.gibson.spica.ui.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 import com.gibson.spica.viewmodel.FileViewModel
-import java.io.File
 
 @Composable
 fun AccountSetupScreen(
@@ -160,7 +156,6 @@ fun StepPhotos(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri -> profileUri = uri }
     )
-
     val coverPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri -> coverUri = uri }
@@ -184,20 +179,25 @@ fun StepPhotos(
 
         Button(
             onClick = {
-                profileUri?.let { fileVM.uploadFile(context, it, type = "profile") }
-                coverUri?.let { fileVM.uploadFile(context, it, type = "cover") }
+                profileUri?.let { fileVM.uploadFile(context, it, "profile") }
+                coverUri?.let { fileVM.uploadFile(context, it, "cover") }
             },
             enabled = !fileVM.isUploading
         ) {
             Text(if (fileVM.isUploading) "Uploading..." else "Upload Files")
         }
 
-        fileVM.uploadMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        fileVM.uploadMessage?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, color = MaterialTheme.colorScheme.primary)
+        }
 
         LaunchedEffect(fileVM.downloadUrl) {
-            if (fileVM.downloadUrl != null) {
-                if (profileUri != null) viewModel.saveProfileImages(fileVM.downloadUrl, viewModel.state.coverUrl)
-                if (coverUri != null) viewModel.saveProfileImages(viewModel.state.profileUrl, fileVM.downloadUrl)
+            fileVM.downloadUrl?.let { url ->
+                if (profileUri != null)
+                    viewModel.saveProfileImages(url, viewModel.state.coverUrl)
+                if (coverUri != null)
+                    viewModel.saveProfileImages(viewModel.state.profileUrl, url)
             }
         }
     }
