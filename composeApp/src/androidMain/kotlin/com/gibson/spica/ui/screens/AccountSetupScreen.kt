@@ -1,202 +1,204 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.gibson.spica.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.gibson.spica.data.LocationData
 import com.gibson.spica.viewmodel.AccountSetupViewModel
+import com.gibson.spica.viewmodel.FileViewModel
+import java.io.File
 
 @Composable
-fun AccountSetupScreen(viewModel: AccountSetupViewModel) {
-    val currentStep = viewModel.currentStep
+fun AccountSetupScreen(
+    viewModel: AccountSetupViewModel = remember { AccountSetupViewModel() },
+    fileVM: FileViewModel = remember { FileViewModel() }
+) {
+    val state = viewModel.state
+    val context = LocalContext.current
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize()
-    ) { padding ->
+    Scaffold { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(20.dp),
             contentAlignment = Alignment.Center
         ) {
-            when (currentStep) {
-                1 -> StepNames(viewModel)
-                2 -> StepBio(viewModel)
+            when (state.step) {
+                1 -> StepName(viewModel)
+                2 -> StepBioPhone(viewModel)
                 3 -> StepLocation(viewModel)
+                4 -> StepPhotos(viewModel, fileVM, context)
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (state.step > 1) {
+                    OutlinedButton(
+                        onClick = { viewModel.prevStep() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Back") }
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                Button(
+                    onClick = {
+                        if (state.step == 4) {
+                            viewModel.submitProfile()
+                        } else {
+                            viewModel.nextStep()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isLoading
+                ) {
+                    Text(
+                        if (state.step == 4)
+                            if (state.isLoading) "Saving..." else "Finish"
+                        else "Next"
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                state.message?.let {
+                    Text(it, color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }
 }
 
 @Composable
-fun StepNames(viewModel: AccountSetupViewModel) {
+fun StepName(viewModel: AccountSetupViewModel) {
+    var name by remember { mutableStateOf(viewModel.state.name) }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Step 1 of 3: Names", style = MaterialTheme.typography.headlineSmall)
+        Text("Step 1: Your Name", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
-            value = viewModel.firstName,
-            onValueChange = { viewModel.firstName = it },
-            label = { Text("First Name") },
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Full Name") },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = viewModel.lastName,
-            onValueChange = { viewModel.lastName = it },
-            label = { Text("Last Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = { viewModel.nextStep() }, modifier = Modifier.fillMaxWidth()) {
-            Text("Next")
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = { viewModel.updateName(name); viewModel.nextStep() }) {
+            Text("Continue")
         }
     }
 }
 
 @Composable
-fun StepBio(viewModel: AccountSetupViewModel) {
+fun StepBioPhone(viewModel: AccountSetupViewModel) {
+    var phone by remember { mutableStateOf(viewModel.state.phone) }
+    var bio by remember { mutableStateOf(viewModel.state.bio) }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Step 2 of 3: Phone & Bio", style = MaterialTheme.typography.headlineSmall)
+        Text("Step 2: Bio & Contact", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
-            value = viewModel.phone,
-            onValueChange = { viewModel.phone = it },
+            value = phone, onValueChange = { phone = it },
             label = { Text("Phone Number") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
-            value = viewModel.bio,
-            onValueChange = { viewModel.bio = it },
+            value = bio, onValueChange = { bio = it },
             label = { Text("Bio") },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(24.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            OutlinedButton(onClick = { viewModel.previousStep() }) {
-                Text("Back")
-            }
-            Button(onClick = { viewModel.nextStep() }) {
-                Text("Next")
-            }
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = { viewModel.updateBioAndPhone(phone, bio); viewModel.nextStep() }) {
+            Text("Continue")
         }
     }
 }
 
 @Composable
 fun StepLocation(viewModel: AccountSetupViewModel) {
-    var expandedCountry by remember { mutableStateOf(false) }
-    var expandedState by remember { mutableStateOf(false) }
-    var expandedTown by remember { mutableStateOf(false) }
+    var location by remember { mutableStateOf(viewModel.state.location) }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Step 3: Location", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = location,
+            onValueChange = { location = it },
+            label = { Text("Your Location") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = { viewModel.updateLocation(location); viewModel.nextStep() }) {
+            Text("Continue")
+        }
+    }
+}
 
-    val countries = LocationData.countries
-    val states = LocationData.getStatesForCountry(viewModel.country).keys.toList()
-    val towns = LocationData.getStatesForCountry(viewModel.country)[viewModel.state] ?: emptyList()
+@Composable
+fun StepPhotos(
+    viewModel: AccountSetupViewModel,
+    fileVM: FileViewModel,
+    context: android.content.Context
+) {
+    var profileUri by remember { mutableStateOf<Uri?>(null) }
+    var coverUri by remember { mutableStateOf<Uri?>(null) }
+
+    val profilePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri -> profileUri = uri }
+    )
+
+    val coverPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri -> coverUri = uri }
+    )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Step 3 of 3: Location", style = MaterialTheme.typography.headlineSmall)
+        Text("Step 4: Profile & Cover Photos", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
 
-        // Country dropdown
-        ExposedDropdownMenuBox(expanded = expandedCountry, onExpandedChange = { expandedCountry = it }) {
-            OutlinedTextField(
-                value = viewModel.country,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Country") },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
-            )
-            ExposedDropdownMenu(expanded = expandedCountry, onDismissRequest = { expandedCountry = false }) {
-                countries.forEach { country ->
-                    DropdownMenuItem(
-                        text = { Text(country) },
-                        onClick = {
-                            viewModel.country = country
-                            viewModel.state = ""
-                            viewModel.town = ""
-                            expandedCountry = false
-                        }
-                    )
-                }
-            }
+        Button(onClick = { profilePicker.launch("image/*") }) {
+            Text("Select Profile Picture")
         }
 
         Spacer(Modifier.height(8.dp))
 
-        // State dropdown
-        ExposedDropdownMenuBox(expanded = expandedState, onExpandedChange = { expandedState = it }) {
-            OutlinedTextField(
-                value = viewModel.state,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("State/Region") },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
-            )
-            ExposedDropdownMenu(expanded = expandedState, onDismissRequest = { expandedState = false }) {
-                states.forEach { state ->
-                    DropdownMenuItem(
-                        text = { Text(state) },
-                        onClick = {
-                            viewModel.state = state
-                            viewModel.town = ""
-                            expandedState = false
-                        }
-                    )
-                }
-            }
+        Button(onClick = { coverPicker.launch("image/*") }) {
+            Text("Select Cover Photo")
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // Town dropdown
-        ExposedDropdownMenuBox(expanded = expandedTown, onExpandedChange = { expandedTown = it }) {
-            OutlinedTextField(
-                value = viewModel.town,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Town") },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
-            )
-            ExposedDropdownMenu(expanded = expandedTown, onDismissRequest = { expandedTown = false }) {
-                towns.forEach { town ->
-                    DropdownMenuItem(
-                        text = { Text(town) },
-                        onClick = {
-                            viewModel.town = town
-                            expandedTown = false
-                        }
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Button(
+            onClick = {
+                profileUri?.let { fileVM.uploadFile(context, it, type = "profile") }
+                coverUri?.let { fileVM.uploadFile(context, it, type = "cover") }
+            },
+            enabled = !fileVM.isUploading
         ) {
-            OutlinedButton(onClick = { viewModel.previousStep() }) {
-                Text("Back")
-            }
-            Button(
-                onClick = { viewModel.nextStep() },
-                enabled = !viewModel.isLoading
-            ) {
-                Text(if (viewModel.isLoading) "Saving..." else "Finish")
-            }
+            Text(if (fileVM.isUploading) "Uploading..." else "Upload Files")
         }
 
-        viewModel.message?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = MaterialTheme.colorScheme.primary)
+        fileVM.uploadMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+
+        LaunchedEffect(fileVM.downloadUrl) {
+            if (fileVM.downloadUrl != null) {
+                if (profileUri != null) viewModel.saveProfileImages(fileVM.downloadUrl, viewModel.state.coverUrl)
+                if (coverUri != null) viewModel.saveProfileImages(viewModel.state.profileUrl, fileVM.downloadUrl)
+            }
         }
     }
 }
