@@ -7,6 +7,9 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Environment
 import android.provider.OpenableColumns
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -28,17 +31,16 @@ import java.util.*
  */
 class FileViewModel : ViewModel() {
 
-    // 🔹 Firebase instances
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // 🔹 UI observable states
-    var isUploading by androidx.compose.runtime.mutableStateOf(false)
+    // 🔹 Observable UI states
+    var isUploading by mutableStateOf(false)
         private set
-    var uploadMessage by androidx.compose.runtime.mutableStateOf<String?>(null)
+    var uploadMessage by mutableStateOf<String?>(null)
         private set
-    var downloadUrl by androidx.compose.runtime.mutableStateOf<String?>(null)
+    var downloadUrl by mutableStateOf<String?>(null)
         private set
 
     private val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
@@ -46,10 +48,9 @@ class FileViewModel : ViewModel() {
     // =============================================================
     // 🖼️ Save File Locally
     // =============================================================
-
     fun saveFileLocally(context: Context, uri: Uri, folder: String = "SPICA"): File? {
         return try {
-            val resolver: ContentResolver = context.contentResolver
+            val resolver = context.contentResolver
             val fileName = getFileName(resolver, uri) ?: "SPICA_${formatter.format(Date())}"
             val input = resolver.openInputStream(uri) ?: return null
 
@@ -69,7 +70,6 @@ class FileViewModel : ViewModel() {
     // =============================================================
     // ☁️ Upload to Firebase Storage + Firestore metadata
     // =============================================================
-
     fun uploadFile(context: Context, uri: Uri, type: String = "file") {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -83,10 +83,9 @@ class FileViewModel : ViewModel() {
                 val storageRef = storage.reference
                     .child("uploads/${user.uid}/${formatter.format(Date())}_${file.name}")
 
-                val uploadTask = storageRef.putFile(Uri.fromFile(file)).await()
+                storageRef.putFile(Uri.fromFile(file)).await()
                 val url = storageRef.downloadUrl.await().toString()
 
-                // 🔸 Save metadata to Firestore
                 val meta = mapOf(
                     "uid" to user.uid,
                     "fileName" to file.name,
@@ -98,22 +97,19 @@ class FileViewModel : ViewModel() {
 
                 firestore.collection("uploads").add(meta).await()
 
-                isUploading = false
-                uploadMessage = "Upload successful!"
                 downloadUrl = url
-
+                uploadMessage = "Upload successful!"
             } catch (e: Exception) {
-                e.printStackTrace()
-                isUploading = false
                 uploadMessage = "Error: ${e.message}"
+            } finally {
+                isUploading = false
             }
         }
     }
 
     // =============================================================
-    // 🧹 Delete File (local & remote)
+    // 🧹 Delete File (remote only)
     // =============================================================
-
     fun deleteFileRemote(fileUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -121,11 +117,11 @@ class FileViewModel : ViewModel() {
                 uploadMessage = "Deleting file..."
                 val ref = storage.getReferenceFromUrl(fileUrl)
                 ref.delete().await()
-                isUploading = false
                 uploadMessage = "File deleted successfully."
             } catch (e: Exception) {
-                isUploading = false
                 uploadMessage = "Failed to delete: ${e.message}"
+            } finally {
+                isUploading = false
             }
         }
     }
@@ -133,7 +129,6 @@ class FileViewModel : ViewModel() {
     // =============================================================
     // 🧰 Helpers
     // =============================================================
-
     private fun copyStream(input: InputStream, output: OutputStream) {
         val buffer = ByteArray(4096)
         var bytesRead: Int
