@@ -11,6 +11,7 @@ import com.gibson.spica.ui.theme.SpicaTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_SPICA)
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
         FirebaseAnalytics.getInstance(this)
