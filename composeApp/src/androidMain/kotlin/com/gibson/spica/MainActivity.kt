@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         // 🎨 Render main navigation after splash completes
         setContent {
             SpicaTheme(isDarkTheme = isSystemInDarkTheme()) {
-                AppNavigation(startDestination = startDestination)
+                App()
             }
         }
     }
