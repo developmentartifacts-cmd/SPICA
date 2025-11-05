@@ -12,7 +12,7 @@ import com.gibson.spica.ui.screens.*
 import com.gibson.spica.viewmodel.AccountSetupViewModel
 
 @Composable
-actual fun AppNavigation(startDestination: String) {
+actual fun AppNavigation() {
     val current = Router.currentRoute
     val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
