@@ -1,17 +1,25 @@
 <resources>
 
-    <!-- 🌙 Main App Theme -->
-    <style name="Theme.SPICA" parent="Theme.SplashScreen">
+    <!-- 🌑 Main App Theme -->
+    <style name="Theme.SPICA" parent="Theme.Material3.NoActionBar">
         <item name="android:windowBackground">@color/black</item>
-        <item name="android:statusBarColor">@color/black</item>
-        <item name="android:navigationBarColor">@color/black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
 
-    <!-- 🚀 Splash Theme (used before Compose starts) -->
-    <style name="Theme.SPICA.Splash" parent="Theme.SPICA">
-        <item name="android:windowBackground">@drawable/splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
-        <item name="android:windowSplashScreenBackground">@null</item>
+    <!-- 🚀 Native Splash Theme -->
+    <style name="Theme.SPICA.Splash" parent="Theme.SplashScreen">
+        <!-- Background color -->
+        <item name="windowSplashScreenBackground">@color/black</item>
+
+        <!-- Logo (centered icon or image) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/spica_splash_logo</item>
+
+        <!-- Optional logo circle background -->
+        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+
+        <!-- After splash, switch to this -->
+        <item name="postSplashScreenTheme">@style/Theme.SPICA</item>
     </style>
 
 </resources>
