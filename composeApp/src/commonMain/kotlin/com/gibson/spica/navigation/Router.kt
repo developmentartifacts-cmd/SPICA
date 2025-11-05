@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
  */
 object Router {
     // 🟢 Default route: Splash Screen (first screen seen on app open)
-    var currentRoute: String by mutableStateOf(Screen.Welcome.route)
+    var currentRoute: String by mutableStateOf("")
         private set
 
     fun navigate(route: String) {
