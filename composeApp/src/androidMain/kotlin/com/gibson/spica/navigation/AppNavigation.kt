@@ -2,6 +2,7 @@ package com.gibson.spica.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,7 +17,20 @@ actual fun AppNavigation() {
     val current = Router.currentRoute
     val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
-    // 🔙 Handle back navigation logic
+    // 🕓 If we’re still waiting for MainActivity auth routing, show loader
+    if (current == Screen.Splash.route) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    // 🔙 Back handling
     BackHandler(enabled = current != Screen.Home.route) {
         if (current !in listOf(
                 Screen.Login.route,
@@ -30,10 +44,11 @@ actual fun AppNavigation() {
         }
     }
 
-    // 🧭 Scaffold layout with conditional bottom bar
+    // 🧭 Scaffold layout
     Scaffold(
         bottomBar = {
             if (current !in listOf(
+                    Screen.Splash.route,
                     Screen.Welcome.route,
                     Screen.Login.route,
                     Screen.Signup.route,
@@ -61,8 +76,8 @@ actual fun AppNavigation() {
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            when (current.ifEmpty) {
-                // 🔹 Auth Flow
+            when (current) {
+                // 🔹 Startup & Auth
                 Screen.Welcome.route -> WelcomeScreen()
                 Screen.Signup.route -> SignupScreen()
                 Screen.Login.route -> LoginScreen()
@@ -75,7 +90,7 @@ actual fun AppNavigation() {
                 Screen.Portfolio.route -> PortfolioScreen()
                 Screen.Watchlist.route -> WatchlistScreen()
 
-                else -> HomeScreen() // fallback
+                else -> CircularProgressIndicator()
             }
         }
     }
