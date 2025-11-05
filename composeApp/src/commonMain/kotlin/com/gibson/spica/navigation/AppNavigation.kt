@@ -9,4 +9,4 @@ import androidx.compose.runtime.Composable
  * startDestination is optional — platform code may pass a specific start route.
  */
 @Composable
-expect fun AppNavigation(startDestination: String)
+expect fun AppNavigation()
