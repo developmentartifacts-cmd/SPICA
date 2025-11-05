@@ -13,7 +13,7 @@
         <item name="windowSplashScreenBackground">@color/black</item>
 
         <!-- Logo (centered icon or image) -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_background</item>
 
         <!-- Optional logo circle background -->
         <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
