@@ -77,7 +77,7 @@ actual fun AppNavigation() {
                 Screen.Watchlist.route -> WatchlistScreen()
 
                 // 🌀 Fallback if route missing
-                else -> CircularProgressIndicator()
+                else -> {}
             }
         }
     }
