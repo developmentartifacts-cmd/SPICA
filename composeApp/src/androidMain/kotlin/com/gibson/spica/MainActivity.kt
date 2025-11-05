@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.gibson.spica.navigation.AppNavigation
+import com.gibson.spica.App
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 import com.gibson.spica.ui.theme.SpicaTheme
