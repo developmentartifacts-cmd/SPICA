@@ -61,7 +61,7 @@ actual fun AppNavigation() {
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            when (current.ifEmpty { startDestination }) {
+            when (current.ifEmpty) {
                 // 🔹 Auth Flow
                 Screen.Welcome.route -> WelcomeScreen()
                 Screen.Signup.route -> SignupScreen()
