@@ -5,5 +5,5 @@ import com.gibson.spica.navigation.AppNavigation
 
 @Composable
 fun App() {
-    AppNavigation()
+    AppNavigation(startDestination: String)
 }
