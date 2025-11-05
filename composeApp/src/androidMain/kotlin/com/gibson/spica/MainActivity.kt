@@ -5,34 +5,49 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.gibson.spica.App
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 import com.gibson.spica.ui.theme.SpicaTheme
 import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 🚀 Install Android 12+ splash screen
-        val splashScreen = installSplashScreen()
+        // ✅ Native splash setup
+        installSplashScreen()
+        setTheme(R.style.Theme_SPICA)
 
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
         FirebaseAnalytics.getInstance(this)
 
         val auth = FirebaseAuth.getInstance()
-        val user = auth.currentUser
+        val firestore = FirebaseFirestore.getInstance()
 
-        // 👇 Check auth state and email verification *before* showing the UI
-        val startDestination = when {
-            user != null && user.isEmailVerified -> Screen.Home.route
-            user != null && !user.isEmailVerified -> Screen.EmailVerify.route
-            else -> Screen.Welcome.route
+        // 🧠 Determine start route before Compose loads
+        val user = auth.currentUser
+        if (user == null) {
+            Router.navigate(Screen.Welcome.route)
+        } else if (!user.isEmailVerified) {
+            Router.navigate(Screen.EmailVerify.route)
+        } else {
+            firestore.collection("users").document(user.uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        Router.navigate(Screen.Home.route)
+                    } else {
+                        Router.navigate(Screen.AccountSetup.route)
+                    }
+                }
+                .addOnFailureListener {
+                    Router.navigate(Screen.Login.route)
+                }
         }
 
-        // 🎨 Render main navigation after splash completes
+        // 🖤 Set Compose UI
         setContent {
             SpicaTheme(isDarkTheme = isSystemInDarkTheme()) {
                 App()
