@@ -17,20 +17,7 @@ actual fun AppNavigation() {
     val current = Router.currentRoute
     val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
 
-    // 🕓 If we’re still waiting for MainActivity auth routing, show loader
-    if (current == Screen.Splash.route) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    // 🔙 Back handling
+    // 🔙 Back button handling
     BackHandler(enabled = current != Screen.Home.route) {
         if (current !in listOf(
                 Screen.Login.route,
@@ -48,7 +35,6 @@ actual fun AppNavigation() {
     Scaffold(
         bottomBar = {
             if (current !in listOf(
-                    Screen.Splash.route,
                     Screen.Welcome.route,
                     Screen.Login.route,
                     Screen.Signup.route,
@@ -90,6 +76,7 @@ actual fun AppNavigation() {
                 Screen.Portfolio.route -> PortfolioScreen()
                 Screen.Watchlist.route -> WatchlistScreen()
 
+                // 🌀 Fallback if route missing
                 else -> CircularProgressIndicator()
             }
         }
