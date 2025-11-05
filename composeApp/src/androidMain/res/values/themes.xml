@@ -11,12 +11,13 @@
     <style name="Theme.SPICA.Splash" parent="Theme.SplashScreen">
         <!-- Background color -->
         <item name="windowSplashScreenBackground">@color/black</item>
-
+        <item name="windowSplashScreenAnimationDuration">0</item>
         <!-- Logo (centered icon or image) -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/play_store_512</item>
 
         <!-- Optional logo circle background -->
-        <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="windowSplashScreenIconBackgroundColor">@null</item>
+        
 
         <!-- After splash, switch to this -->
         <item name="postSplashScreenTheme">@style/Theme.SPICA</item>
