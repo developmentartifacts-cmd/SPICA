@@ -3,7 +3,6 @@ package com.gibson.spica.navigation
 sealed class Screen(val route: String) {
 
     // 🚀 Startup & Auth Flow
-    object Splash : Screen("splash")
     object Welcome : Screen("welcome")
     object Signup : Screen("signup")
     object Login : Screen("login")
@@ -18,7 +17,6 @@ sealed class Screen(val route: String) {
 
     companion object {
         fun fromRoute(route: String?): Screen? = when (route) {
-            Splash.route -> Splash
             Welcome.route -> Welcome
             Signup.route -> Signup
             Login.route -> Login
