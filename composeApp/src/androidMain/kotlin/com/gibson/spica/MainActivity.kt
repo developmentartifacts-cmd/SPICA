@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // ✅ Native splash setup
         installSplashScreen()
-        setTheme(R.style.Theme_SPICA)
+        
 
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
