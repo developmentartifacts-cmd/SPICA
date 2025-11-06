@@ -6,162 +6,104 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Composable
-fun WatchlistScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        WatchlistTopBar()
-        Spacer(Modifier.height(16.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Your Vision list — follow assets, creators, and opportunities.",
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun WatchlistTopBar() {
+fun WatchlistScreen() {
     var expanded by remember { mutableStateOf(false) }
-    var searching by remember { mutableStateOf(false) }
-    var searchText by remember { mutableStateOf(TextFieldValue("")) }
+    var searchMode by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    val filters = listOf("All", "Following", "Trending", "Creators", "Signals")
+    Column(modifier = Modifier.fillMaxSize()) {
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // 🔹 Left Expandable Circle
-        Box(
+        Row(
             modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable { expanded = !expanded; if (searching) searching = false },
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Box(
-                    modifier = Modifier
-                        .width(14.dp)
-                        .height(2.dp)
-                        .background(MaterialTheme.colorScheme.onSurface)
-                )
-                Spacer(Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .width(20.dp)
-                        .height(2.dp)
-                        .background(MaterialTheme.colorScheme.onSurface)
-                )
-            }
-        }
-
-        // 🔹 Expandable Filters / Search
-        AnimatedContent(
-            targetState = expanded to searching,
-            transitionSpec = {
-                fadeIn() + expandHorizontally() with fadeOut() + shrinkHorizontally()
-            },
-            label = "watch_expand"
-        ) { (isExpanded, isSearching) ->
-            when {
-                isExpanded && !isSearching -> {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            // Left expandable circle
+            Box(
+                modifier = Modifier
+                    .size(45.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable { expanded = !expanded },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 10.dp)
-                    ) {
-                        IconButton(onClick = { searching = true }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        filters.forEach { filter ->
-                            Text(
-                                text = filter,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.clickable { /* apply filter */ }
-                            )
-                        }
-                    }
+                            .width(16.dp)
+                            .height(2.dp)
+                            .background(MaterialTheme.colorScheme.onPrimary)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(2.dp)
+                            .background(MaterialTheme.colorScheme.onPrimary)
+                    )
                 }
+            }
 
-                isExpanded && isSearching -> {
+            AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
+                if (searchMode) {
                     TextField(
-                        value = searchText,
-                        onValueChange = { searchText = it },
-                        placeholder = { Text("Search watchlist...") },
-                        singleLine = true,
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search Watchlist") },
                         colors = TextFieldDefaults.textFieldColors(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            cursorColor = MaterialTheme.colorScheme.onSurface,
                             textColor = MaterialTheme.colorScheme.onSurface,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                            placeholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         ),
                         modifier = Modifier
                             .weight(1f)
-                            .height(46.dp)
+                            .padding(horizontal = 12.dp)
                     )
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        listOf("All", "People", "Ideas", "Projects").forEach {
+                            Text(
+                                text = it,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                                fontSize = 14.sp
+                            )
+                        }
+                        IconButton(onClick = { searchMode = true }) {
+                            Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onBackground)
+                        }
+                    }
                 }
+            }
 
-                else -> {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+            AnimatedVisibility(visible = !expanded, enter = fadeIn(), exit = fadeOut()) {
+                Icon(
+                    Icons.Default.Chat,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(30.dp)
+                )
             }
         }
 
-        // 🔹 Right Chat Icon
-        AnimatedVisibility(
-            visible = !expanded,
-            enter = fadeIn() + expandHorizontally(),
-            exit = fadeOut() + shrinkHorizontally()
-        ) {
-            IconButton(
-                onClick = { /* open vision chat */ },
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Icon(
-                    Icons.Default.ChatBubbleOutline,
-                    contentDescription = "Chat",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Watchlist", color = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
