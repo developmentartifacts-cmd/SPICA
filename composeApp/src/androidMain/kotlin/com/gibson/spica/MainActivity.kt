@@ -15,19 +15,20 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ✅ Native splash setup
-        installSplashScreen()
         
-
         super.onCreate(savedInstanceState)
-        FirebaseApp.initializeApp(this)
+
+FirebaseApp.initializeApp(this)
         FirebaseAnalytics.getInstance(this)
 
         val auth = FirebaseAuth.getInstance()
         val firestore = FirebaseFirestore.getInstance()
+        
+        var showSplashScreen = true
 
-        // 🧠 Determine start route before Compose loads
-        val user = auth.currentUser
+        
+        lifecycleScope.launch {
+            val user = auth.currentUser
         if (user == null) {
             Router.navigate(Screen.Welcome.route)
         } else if (!user.isEmailVerified) {
@@ -46,6 +47,15 @@ class MainActivity : ComponentActivity() {
                     Router.navigate(Screen.Login.route)
                 }
         }
+            showSplashScreen = false
+        }
+
+        installSplashScreen().apply {
+            setKeepOnScreenCondition{
+                showSplashScreen
+            }
+        }
+        
 
         // 🖤 Set Compose UI
         setContent {
