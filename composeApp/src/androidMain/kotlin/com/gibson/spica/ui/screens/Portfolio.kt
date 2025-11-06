@@ -1,8 +1,6 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +23,8 @@ fun PortfolioScreen() {
             .background(MaterialTheme.colorScheme.background)
     ) {
         PortfolioTopBar()
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -33,7 +32,7 @@ fun PortfolioScreen() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Your Identity and Essence live here — manage your SPICA presence.",
+                text = "Your Identity and essence live here — manage your SPICA presence.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             )
@@ -41,7 +40,6 @@ fun PortfolioScreen() {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun PortfolioTopBar() {
     var showMenu by remember { mutableStateOf(false) }
@@ -53,10 +51,9 @@ private fun PortfolioTopBar() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // 🔹 Empty Left Space (kept for layout balance)
+        // left spacer for alignment
         Spacer(modifier = Modifier.weight(1f))
 
-        // 🔹 Right Pill (Create + Menu)
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
@@ -65,48 +62,17 @@ private fun PortfolioTopBar() {
             contentAlignment = Alignment.Center
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { /* create new identity or post */ },
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Create",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                IconButton(onClick = { /* create */ }, modifier = Modifier.size(38.dp).clip(CircleShape)) {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = "Create", tint = MaterialTheme.colorScheme.onSurface)
+                }
+                IconButton(onClick = { showMenu = !showMenu }, modifier = Modifier.size(38.dp).clip(CircleShape)) {
+                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurface)
                 }
 
-                IconButton(
-                    onClick = { showMenu = !showMenu },
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                ) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "More",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Account Settings") },
-                        onClick = { /* open settings */ }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Analytics") },
-                        onClick = { /* open analytics */ }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Logout") },
-                        onClick = { /* perform logout */ }
-                    )
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("Account Settings") }, onClick = { /* open */ })
+                    DropdownMenuItem(text = { Text("Analytics") }, onClick = { /* open */ })
+                    DropdownMenuItem(text = { Text("Logout") }, onClick = { /* logout */ })
                 }
             }
         }
