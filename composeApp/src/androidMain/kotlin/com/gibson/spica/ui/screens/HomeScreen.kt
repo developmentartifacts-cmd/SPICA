@@ -1,6 +1,8 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,115 +11,176 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.*
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun HomeScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        HomeTopBar()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Your Stream and personalized Flow will appear here.",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeTopBar() {
     var expanded by remember { mutableStateOf(false) }
     var searchMode by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf(TextFieldValue("")) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val categories = listOf("All", "Tech", "Mobile", "Coding", "Science")
 
-        // ===== Top Bar =====
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .animateContentSize(), // smooth width/height changes
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Left circle (expand toggle)
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable {
+                    expanded = !expanded
+                    if (!expanded) searchMode = false
+                },
+            contentAlignment = Alignment.Center
         ) {
-            // Left circle button
-            Box(
-                modifier = Modifier
-                    .size(45.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable { expanded = !expanded },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(16.dp)
-                            .height(2.dp)
-                            .background(MaterialTheme.colorScheme.onPrimary)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .width(28.dp)
-                            .height(2.dp)
-                            .background(MaterialTheme.colorScheme.onPrimary)
-                    )
-                }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .width(14.dp)
+                        .height(2.dp)
+                        .background(MaterialTheme.colorScheme.onSurface)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .width(20.dp)
+                        .height(2.dp)
+                        .background(MaterialTheme.colorScheme.onSurface)
+                )
             }
+        }
 
-            AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
+        // Middle section (categories or search) — expands when left toggled
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp, end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 if (searchMode) {
                     TextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search Stream") },
-                        colors = TextFieldDefaults.textFieldColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            textColor = MaterialTheme.colorScheme.onSurface,
-                            placeholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = { Text("Search Flow...") },
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         ),
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp)
+                            .fillMaxWidth()
+                            .height(48.dp)
                     )
                 } else {
+                    // categories row
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf("All", "Tech", "Mobile", "Coding", "Science").forEach {
-                            Text(
-                                text = it,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                                fontSize = 14.sp
+                        IconButton(onClick = { searchMode = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        IconButton(onClick = { searchMode = true }) {
-                            Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onBackground)
+                        categories.forEach { cat ->
+                            Text(
+                                text = cat,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .clickable { /* apply category filter */ }
+                                    .padding(vertical = 6.dp)
+                            )
                         }
                     }
                 }
             }
-
-            // Right pill
-            AnimatedVisibility(visible = !expanded, enter = fadeIn(), exit = fadeOut()) {
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onPrimary)
-                    Icon(Icons.Default.MoreVert, null, tint = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
         }
 
-        // Body placeholder
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Home Stream", color = MaterialTheme.colorScheme.onBackground)
+        // Right pill (Create + Menu) — hidden while expanded
+        AnimatedVisibility(
+            visible = !expanded,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { /* open create */ }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = "Create",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                IconButton(onClick = { /* open menu */ }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "Menu",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 }
