@@ -35,6 +35,7 @@ fun PortfolioScreen() {
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
+                // Right pill with two icons (Add and More)
                 Row(
                     modifier = Modifier
                         .height(46.dp)
@@ -64,6 +65,25 @@ fun PortfolioScreen() {
         },
         containerColor = navBackground
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "My Holdings",
+                style = MaterialTheme.typography.headlineLarge,
+                color = colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Current Value: $5,248.90",
+                style = MaterialTheme.typography.titleMedium,
+                color = colorScheme.secondary
+            )
+        }
     }
 }
