@@ -1,5 +1,6 @@
 package com.gibson.spica.ui.screens
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
