@@ -1,125 +1,29 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen() {
-    val colorScheme = MaterialTheme.colorScheme
-    val navBackground = colorScheme.surface
-    val iconTint = colorScheme.onSurface
-    val iconBackground = colorScheme.onSurface.copy(alpha = 0.08f)
-    val pillBackground = colorScheme.onSurface.copy(alpha = 0.1f)
-
-    Scaffold(
-        topBar = {
-            // Your existing custom Top Bar with the Menu Icon (Left) and Action Pill (Right)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Left circle with two lines (Menu/Profile Icon)
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(iconBackground)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { /* TODO: Menu Click */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Custom drawn icon (two lines)
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(14.dp)
-                                .height(2.dp)
-                                .background(iconTint, shape = RoundedCornerShape(1.dp))
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .height(2.dp)
-                                .background(iconTint, shape = RoundedCornerShape(1.dp))
-                        )
-                    }
-                }
-
-                // Right pill with two icons (Add and More)
-                Row(
-                    modifier = Modifier
-                        .height(46.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(pillBackground)
-                        .padding(horizontal = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(Icons.Default.Add, Icons.Default.MoreVert).forEach { icon ->
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(iconBackground)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) { /* TODO: Action Click */ },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(icon, contentDescription = null, tint = iconTint)
-                        }
-                    }
-                }
-            }
-        },
-        containerColor = navBackground
-    ) { padding ->
-        // ✅ NEW CONTENT: Added a large title and placeholder text
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = "Welcome Back",
-                style = MaterialTheme.typography.headlineLarge,
-                color = colorScheme.onSurface
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Welcome to SPICA Home Screen",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Explore the Cosmos.",
-                style = MaterialTheme.typography.titleMedium,
-                color = colorScheme.secondary
-            )
-        }
+        )
     }
 }
