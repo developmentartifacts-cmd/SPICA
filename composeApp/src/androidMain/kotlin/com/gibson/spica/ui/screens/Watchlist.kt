@@ -2,88 +2,44 @@
 
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun WatchlistScreen() {
     val colorScheme = MaterialTheme.colorScheme
     val navBackground = colorScheme.surface
-    val iconTint = colorScheme.onSurface
-    val iconBackground = colorScheme.onSurface.copy(alpha = 0.08f)
 
     Scaffold(
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Left circle with two lines
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(iconBackground)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { /* TODO */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(14.dp)
-                                .height(2.dp)
-                                .background(iconTint, shape = RoundedCornerShape(1.dp))
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .height(2.dp)
-                                .background(iconTint, shape = RoundedCornerShape(1.dp))
-                        )
-                    }
-                }
-
-                // Right chat icon
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(iconBackground)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { /* TODO: Chat */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Chat, null, tint = iconTint)
-                }
-            }
-        },
+        // This screen has no custom top bar
+        topBar = {},
         containerColor = navBackground
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Watchlist",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Your Orbits — people, ideas, and projects you follow.",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
+        }
     }
 }
