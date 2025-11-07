@@ -19,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+
+// ... (Imports are the same as HomeScreen)
+
 @Composable
 fun MarketplaceScreen() {
     val colorScheme = MaterialTheme.colorScheme
@@ -29,6 +32,7 @@ fun MarketplaceScreen() {
 
     Scaffold(
         topBar = {
+            // Your existing custom Top Bar (identical to HomeScreen)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -98,6 +102,26 @@ fun MarketplaceScreen() {
         },
         containerColor = navBackground
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding))
+        // ✅ NEW CONTENT: Added a title and marketplace placeholder
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Global Exchange",
+                style = MaterialTheme.typography.headlineLarge,
+                color = colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Discover new ideas and projects.",
+                style = MaterialTheme.typography.titleMedium,
+                color = colorScheme.secondary
+            )
+        }
     }
 }
