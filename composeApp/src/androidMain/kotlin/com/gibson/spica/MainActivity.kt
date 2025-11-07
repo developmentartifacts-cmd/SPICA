@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
+import com.gibson.spica.ui.screens
 import com.gibson.spica.ui.theme.SpicaTheme
 import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
