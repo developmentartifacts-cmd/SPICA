@@ -1,45 +1,29 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.gibson.spica.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun WatchlistScreen() {
-    val colorScheme = MaterialTheme.colorScheme
-    val navBackground = colorScheme.surface
-
-    Scaffold(
-        // This screen has no custom top bar
-        topBar = {},
-        containerColor = navBackground
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Watchlist",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Your Orbits — people, ideas, and projects you follow.",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-            }
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Welcome to SPICA Watchlist Screen",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center
+            )
+        )
     }
 }
