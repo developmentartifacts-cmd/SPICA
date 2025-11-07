@@ -29,6 +29,7 @@ fun HomeScreen() {
 
     Scaffold(
         topBar = {
+            // Your existing custom Top Bar with the Menu Icon (Left) and Action Pill (Right)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -36,7 +37,7 @@ fun HomeScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left circle with two lines
+                // Left circle with two lines (Menu/Profile Icon)
                 Box(
                     modifier = Modifier
                         .size(46.dp)
@@ -45,9 +46,10 @@ fun HomeScreen() {
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { /* TODO: Menu */ },
+                        ) { /* TODO: Menu Click */ },
                     contentAlignment = Alignment.Center
                 ) {
+                    // Custom drawn icon (two lines)
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -68,7 +70,7 @@ fun HomeScreen() {
                     }
                 }
 
-                // Right pill with two icons
+                // Right pill with two icons (Add and More)
                 Row(
                     modifier = Modifier
                         .height(46.dp)
@@ -87,10 +89,10 @@ fun HomeScreen() {
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { /* TODO */ },
+                                ) { /* TODO: Action Click */ },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(icon, null, tint = iconTint)
+                            Icon(icon, contentDescription = null, tint = iconTint)
                         }
                     }
                 }
@@ -98,6 +100,26 @@ fun HomeScreen() {
         },
         containerColor = navBackground
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding))
+        // ✅ NEW CONTENT: Added a large title and placeholder text
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Welcome Back",
+                style = MaterialTheme.typography.headlineLarge,
+                color = colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Explore the Cosmos.",
+                style = MaterialTheme.typography.titleMedium,
+                color = colorScheme.secondary
+            )
+        }
     }
 }
