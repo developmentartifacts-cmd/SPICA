@@ -1,29 +1,59 @@
 package com.gibson.spica.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun WatchlistScreen() {
-    Box(
+    Scaffold(
+        topBar = { WatchlistTopBar() }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Watchlist Screen", color = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun WatchlistTopBar() {
+    Row(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "Welcome to SPICA Watchlist Screen",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = 20.sp,
-                textAlign = TextAlign.Center
-            )
-        )
+        IconButton(
+            onClick = {},
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color.Gray.copy(alpha = 0.2f), CircleShape)
+        ) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+        }
+
+        IconButton(
+            onClick = {},
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color.Gray.copy(alpha = 0.2f), CircleShape)
+        ) {
+            Icon(Icons.Default.Chat, contentDescription = "Chat", tint = Color.White)
+        }
     }
 }
