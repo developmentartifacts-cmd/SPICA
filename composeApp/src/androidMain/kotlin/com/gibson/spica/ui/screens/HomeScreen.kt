@@ -6,13 +6,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen() {
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -21,7 +22,7 @@ fun HomeScreen() {
     ) {
         Text(
             text = "Welcome to SPICA Home Screen",
-            color = Color(0xFFFF69B4), // 🎀 Pink
+            color = colorScheme.primary, // ✅ same approach as AppNavBar color usage
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center
