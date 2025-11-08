@@ -1,4 +1,4 @@
-package com.gibson.SPICA.ui.screens
+package com.gibson.spica.ui.screens
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
