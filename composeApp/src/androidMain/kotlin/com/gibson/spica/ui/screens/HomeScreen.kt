@@ -22,7 +22,7 @@ fun HomeScreen() {
     ) {
         Text(
             text = "Welcome to SPICA Home Screen",
-            color = colorScheme.primary, // ✅ same approach as AppNavBar color usage
+            color = colorScheme.onBackground, // ✅ same approach as AppNavBar color usage
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center
