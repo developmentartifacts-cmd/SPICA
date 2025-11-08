@@ -1,4 +1,4 @@
-package com.gibson.spica.ui.theme
+/*package com.gibson.spica.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -41,3 +41,4 @@ fun SpicaTheme(
         content = content
     )
 }
+*/
