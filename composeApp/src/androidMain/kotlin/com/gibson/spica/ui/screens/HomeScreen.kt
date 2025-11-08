@@ -20,7 +20,7 @@ fun HomeScreen() {
     ) { padding ->
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
