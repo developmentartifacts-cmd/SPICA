@@ -44,7 +44,7 @@ Scaffold(
         ) {  
             Box(  
                 modifier = Modifier  
-                    .fillMaxSize()  
+                    .fillMaxWidth()  
                     .padding(bottom = 5.dp),  
                 contentAlignment = Alignment.BottomCenter  
             ) {  
