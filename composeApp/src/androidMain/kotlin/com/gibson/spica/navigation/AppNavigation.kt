@@ -42,9 +42,10 @@ actual fun AppNavigation() {
                     Screen.AccountSetup.route
                 )
             ) {
+                // ✅ Only take width, not height
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(bottom = 5.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
