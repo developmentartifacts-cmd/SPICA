@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 
 // 🎨 Monochrome palette for SPICA
 
-private val DarkColors = darkColorScheme(
+private val LightColors = darkColorScheme(
     background = Color(0xFF000000),     // Pure black background
     onBackground = Color(0xFFFFFFFF),  // White text/icons on black
     surface = Color(0xFF121212),       // Slightly lifted surface
@@ -18,7 +18,7 @@ private val DarkColors = darkColorScheme(
     secondary = Color(0xFFBDBDBD),     // Light grey for unselected icons
 )
 
-private val LightColors = lightColorScheme(
+private val DarkColors = lightColorScheme(
     background = Color(0xFFFFFFFF),     // Pure white background
     onBackground = Color(0xFF000000),  // Black text/icons on white
     surface = Color(0xFFF5F5F5),       // Light lifted surface
