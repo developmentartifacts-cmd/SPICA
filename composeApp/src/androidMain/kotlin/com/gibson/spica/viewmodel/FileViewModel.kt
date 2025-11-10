@@ -18,16 +18,15 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
+import kotlinx.coroutines.withContext
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Handles file saving & uploading for SPICA.
- * Works with images, videos, and documents — no Coil/Glide.
+ * Handles local saving and cloud uploads for SPICA files.
+ * Supports images, videos, and documents.
+ * Compatible with Compose Multiplatform (Android-first now).
  */
 class FileViewModel : ViewModel() {
 
@@ -35,7 +34,7 @@ class FileViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    // 🔹 Observable UI states
+    // 🔹 UI State
     var isUploading by mutableStateOf(false)
         private set
     var uploadMessage by mutableStateOf<String?>(null)
@@ -48,7 +47,7 @@ class FileViewModel : ViewModel() {
     // =============================================================
     // 🖼️ Save File Locally
     // =============================================================
-    fun saveFileLocally(context: Context, uri: Uri, folder: String = "SPICA"): File? {
+    private fun saveFileLocally(context: Context, uri: Uri, folder: String = "SPICA"): File? {
         return try {
             val resolver = context.contentResolver
             val fileName = getFileName(resolver, uri) ?: "SPICA_${formatter.format(Date())}"
@@ -58,8 +57,9 @@ class FileViewModel : ViewModel() {
             if (!dir.exists()) dir.mkdirs()
 
             val destFile = File(dir, fileName)
-            val output = FileOutputStream(destFile)
-            copyStream(input, output)
+            FileOutputStream(destFile).use { output ->
+                copyStream(input, output)
+            }
             destFile
         } catch (e: Exception) {
             e.printStackTrace()
@@ -68,60 +68,77 @@ class FileViewModel : ViewModel() {
     }
 
     // =============================================================
-    // ☁️ Upload to Firebase Storage + Firestore metadata
+    // ☁️ Upload File to Firebase Storage + Firestore metadata
     // =============================================================
     fun uploadFile(context: Context, uri: Uri, type: String = "file") {
+        val safeContext = context.applicationContext
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                isUploading = true
-                uploadMessage = "Preparing file..."
+                withContext(Dispatchers.Main) {
+                    isUploading = true
+                    uploadMessage = "Preparing file..."
+                }
 
                 val user = auth.currentUser ?: throw Exception("User not logged in.")
-                val file = saveFileLocally(context, uri, folder = "SPICA_Uploads")
+                val localFile = saveFileLocally(safeContext, uri, folder = "SPICA_Uploads")
                     ?: throw Exception("Failed to save file locally.")
 
                 val storageRef = storage.reference
-                    .child("uploads/${user.uid}/${formatter.format(Date())}_${file.name}")
+                    .child("uploads/${user.uid}/${formatter.format(Date())}_${localFile.name}")
 
-                storageRef.putFile(Uri.fromFile(file)).await()
+                withContext(Dispatchers.Main) { uploadMessage = "Uploading..." }
+
+                storageRef.putFile(Uri.fromFile(localFile)).await()
+
                 val url = storageRef.downloadUrl.await().toString()
 
                 val meta = mapOf(
                     "uid" to user.uid,
-                    "fileName" to file.name,
+                    "fileName" to localFile.name,
                     "type" to type,
-                    "size" to file.length(),
+                    "size" to localFile.length(),
                     "url" to url,
                     "timestamp" to System.currentTimeMillis()
                 )
 
                 firestore.collection("uploads").add(meta).await()
 
-                downloadUrl = url
-                uploadMessage = "Upload successful!"
+                withContext(Dispatchers.Main) {
+                    downloadUrl = url
+                    uploadMessage = "Upload successful!"
+                }
             } catch (e: Exception) {
-                uploadMessage = "Error: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    uploadMessage = "Upload failed: ${e.localizedMessage ?: "Unknown error"}"
+                }
             } finally {
-                isUploading = false
+                withContext(Dispatchers.Main) { isUploading = false }
             }
         }
     }
 
     // =============================================================
-    // 🧹 Delete File (remote only)
+    // 🧹 Delete Remote File
     // =============================================================
     fun deleteFileRemote(fileUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                isUploading = true
-                uploadMessage = "Deleting file..."
+                withContext(Dispatchers.Main) {
+                    isUploading = true
+                    uploadMessage = "Deleting..."
+                }
                 val ref = storage.getReferenceFromUrl(fileUrl)
                 ref.delete().await()
-                uploadMessage = "File deleted successfully."
+                withContext(Dispatchers.Main) {
+                    uploadMessage = "File deleted successfully."
+                }
             } catch (e: Exception) {
-                uploadMessage = "Failed to delete: ${e.message}"
+                withContext(Dispatchers.Main) {
+                    uploadMessage = "Failed to delete: ${e.localizedMessage}"
+                }
             } finally {
-                isUploading = false
+                withContext(Dispatchers.Main) { isUploading = false }
             }
         }
     }
@@ -135,9 +152,6 @@ class FileViewModel : ViewModel() {
         while (input.read(buffer).also { bytesRead = it } != -1) {
             output.write(buffer, 0, bytesRead)
         }
-        output.flush()
-        input.close()
-        output.close()
     }
 
     private fun getFileName(resolver: ContentResolver, uri: Uri): String? {
@@ -145,18 +159,14 @@ class FileViewModel : ViewModel() {
         val cursor = resolver.query(uri, null, null, null, null)
         cursor?.use {
             val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (it.moveToFirst() && nameIndex >= 0) {
-                name = it.getString(nameIndex)
-            }
+            if (it.moveToFirst() && nameIndex >= 0) name = it.getString(nameIndex)
         }
         return name
     }
 
-    fun loadBitmapFromFile(file: File): Bitmap? {
-        return try {
-            BitmapFactory.decodeFile(file.absolutePath)
-        } catch (e: Exception) {
-            null
-        }
+    fun loadBitmapFromFile(file: File): Bitmap? = try {
+        BitmapFactory.decodeFile(file.absolutePath)
+    } catch (_: Exception) {
+        null
     }
 }
