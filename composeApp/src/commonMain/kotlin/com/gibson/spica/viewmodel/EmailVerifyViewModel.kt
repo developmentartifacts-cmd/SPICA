@@ -2,79 +2,62 @@ package com.gibson.spica.viewmodel
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
-import com.google.firebase.auth.FirebaseAuth
+import androidx.lifecycle.viewModelScope
+import com.gibson.spica.data.AuthService
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
+import kotlinx.coroutines.launch
 
 data class EmailVerifyState(
     val isLoading: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val isVerified: Boolean = false
 )
 
-class EmailVerifyViewModel : ViewModel() {
+class EmailVerifyViewModel(
+    private val authService: AuthService = AuthService()
+) : ViewModel() {
 
     var state by mutableStateOf(EmailVerifyState())
         private set
 
-    private val auth = FirebaseAuth.getInstance()
-
     init {
-        sendVerificationEmailIfNeeded()
+        // send verification if needed (safe to call)
+        viewModelScope.launch {
+            sendVerificationIfNeeded()
+        }
     }
 
-    private fun sendVerificationEmailIfNeeded() {
-        val user = auth.currentUser
+    private suspend fun sendVerificationIfNeeded() {
+        val user = authService.currentUser
         if (user != null && !user.isEmailVerified) {
-            user.sendEmailVerification()
-                .addOnSuccessListener {
-                    state = state.copy(message = "Verification email sent successfully!")
-                }
-                .addOnFailureListener {
-                    state = state.copy(message = "Error: ${it.message}")
-                }
+            val res = authService.sendEmailVerification()
+            state = state.copy(message = res.exceptionOrNull()?.localizedMessage ?: "Verification email sent.")
         }
     }
 
     fun resendVerificationEmail() {
-        val user = auth.currentUser
-        if (user == null) {
-            state = state.copy(message = "No logged-in user found.")
-            return
+        viewModelScope.launch {
+            state = state.copy(isLoading = true, message = null)
+            val res = authService.sendEmailVerification()
+            state = state.copy(isLoading = false, message = res.exceptionOrNull()?.localizedMessage ?: "Verification email resent.")
         }
-
-        state = state.copy(isLoading = true)
-        user.sendEmailVerification()
-            .addOnCompleteListener { task ->
-                state = if (task.isSuccessful) {
-                    state.copy(isLoading = false, message = "Verification email resent.")
-                } else {
-                    state.copy(
-                        isLoading = false,
-                        message = "Failed to resend: ${task.exception?.message}"
-                    )
-                }
-            }
     }
 
     fun checkVerificationStatus() {
-        val user = auth.currentUser
-        if (user == null) {
-            state = state.copy(message = "User not logged in.")
-            return
-        }
-
-        state = state.copy(isLoading = true)
-        user.reload().addOnCompleteListener { reloadTask ->
-            if (reloadTask.isSuccessful) {
-                val refreshedUser = auth.currentUser
-                if (refreshedUser?.isEmailVerified == true) {
-                    state = state.copy(isLoading = false, message = "Email verified successfully!")
-                    Router.navigate(Screen.AccountSetup.route)
-                } else {
-                    state = state.copy(isLoading = false, message = "Email not verified yet.")
-                }
+        viewModelScope.launch {
+            state = state.copy(isLoading = true, message = null)
+            val reloadRes = authService.reloadCurrentUser()
+            if (reloadRes.isFailure) {
+                state = state.copy(isLoading = false, message = reloadRes.exceptionOrNull()?.localizedMessage)
+                return@launch
+            }
+            val user = reloadRes.getOrNull()
+            if (user?.isEmailVerified == true) {
+                state = state.copy(isLoading = false, isVerified = true, message = "Email verified")
+                Router.navigate(Screen.AccountSetup.route)
             } else {
-                state = state.copy(isLoading = false, message = "Error: ${reloadTask.exception?.message}")
+                state = state.copy(isLoading = false, message = "Email not verified yet.")
             }
         }
     }
