@@ -1,70 +1,44 @@
 package com.gibson.spica.data
 
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
-/**
- * Handles all Firebase Firestore operations.
- * Provides simple CRUD helpers for collections and documents.
- */
-object FirestoreService {
-
-    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
-
-    /** Get a Firestore collection reference. */
-    fun getCollection(collectionPath: String) = db.collection(collectionPath)
-
-    /** Add a new document with auto-generated ID. */
-    fun addDocument(
-        collectionPath: String,
-        data: Map<String, Any>,
-        onResult: (Boolean, String?) -> Unit
-    ) {
-        db.collection(collectionPath)
-            .add(data)
-            .addOnSuccessListener { onResult(true, null) }
-            .addOnFailureListener { e -> onResult(false, e.message) }
+class FirestoreService(
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
+    suspend fun setDocument(collectionPath: String, documentId: String, data: Map<String, Any>) : Result<Unit> {
+        return try {
+            firestore.collection(collectionPath).document(documentId).set(data).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    /** Set a document by ID (overwrite or create if not exists). */
-    fun setDocument(
-        collectionPath: String,
-        documentId: String,
-        data: Map<String, Any>,
-        onResult: (Boolean, String?) -> Unit
-    ) {
-        db.collection(collectionPath)
-            .document(documentId)
-            .set(data)
-            .addOnSuccessListener { onResult(true, null) }
-            .addOnFailureListener { e -> onResult(false, e.message) }
+    suspend fun addDocument(collectionPath: String, data: Map<String, Any>) : Result<String> {
+        return try {
+            val ref = firestore.collection(collectionPath).add(data).await()
+            Result.success(ref.id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    /** Get a document snapshot once. */
-    fun getDocumentOnce(
-        collectionPath: String,
-        documentId: String,
-        onResult: (Map<String, Any>?, String?) -> Unit
-    ) {
-        db.collection(collectionPath)
-            .document(documentId)
-            .get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) onResult(doc.data, null)
-                else onResult(null, "Document not found")
-            }
-            .addOnFailureListener { e -> onResult(null, e.message) }
+    suspend fun getDocument(collectionPath: String, documentId: String) : Result<Map<String, Any>?> {
+        return try {
+            val snap = firestore.collection(collectionPath).document(documentId).get().await()
+            if (snap.exists()) Result.success(snap.data) else Result.success(null)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    /** Delete a document by ID. */
-    fun deleteDocument(
-        collectionPath: String,
-        documentId: String,
-        onResult: (Boolean, String?) -> Unit
-    ) {
-        db.collection(collectionPath)
-            .document(documentId)
-            .delete()
-            .addOnSuccessListener { onResult(true, null) }
-            .addOnFailureListener { e -> onResult(false, e.message) }
+    suspend fun deleteDocument(collectionPath: String, documentId: String) : Result<Unit> {
+        return try {
+            firestore.collection(collectionPath).document(documentId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
