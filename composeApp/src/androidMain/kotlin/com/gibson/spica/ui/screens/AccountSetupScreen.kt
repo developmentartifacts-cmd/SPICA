@@ -310,6 +310,7 @@ fun StepBioPhone(viewModel: AccountSetupViewModel) {
 
 @Composable
 fun StepPhotos(viewModel: AccountSetupViewModel, fileVM: FileViewModel) {
+    val context = LocalContext.current
     var profileUri by remember { mutableStateOf<Uri?>(null) }
     var coverUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -331,10 +332,14 @@ fun StepPhotos(viewModel: AccountSetupViewModel, fileVM: FileViewModel) {
                 }
 
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = {
-                    profileUri?.let { fileVM.uploadFile(it, "profile") }
-                    coverUri?.let { fileVM.uploadFile(it, "cover") }
-                }, enabled = !fileVM.isUploading, shape = RoundedCornerShape(50)) {
+                Button(
+                    onClick = {
+                        profileUri?.let { fileVM.uploadFile(context, it, "profile") }
+                        coverUri?.let { fileVM.uploadFile(context, it, "cover") }
+                    },
+                    enabled = !fileVM.isUploading,
+                    shape = RoundedCornerShape(50)
+                ) {
                     Text(if (fileVM.isUploading) "Uploading..." else "Upload Files")
                 }
 
