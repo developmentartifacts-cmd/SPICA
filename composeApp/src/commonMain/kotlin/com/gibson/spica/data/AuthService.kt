@@ -2,56 +2,77 @@ package com.gibson.spica.data
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.UserProfileChangeRequest
-import android.app.Activity
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.tasks.await
 
-object AuthService {
-
+class AuthService(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    var currentActivity: Activity? = null
+) {
+    val currentUser: FirebaseUser? get() = auth.currentUser
 
-    fun getCurrentUser(): FirebaseUser? = auth.currentUser
-
-    fun isLoggedIn(): Boolean = auth.currentUser != null
-
-    fun signIn(
-        email: String,
-        password: String,
-        onResult: (success: Boolean, error: String?) -> Unit
-    ) {
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    onResult(true, null)
-                } else {
-                    onResult(false, task.exception?.message)
-                }
-            }
-    }
-
-    fun signUp(
-        email: String,
-        password: String,
-        onResult: (success: Boolean, error: String?) -> Unit
-    ) {
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = auth.currentUser
-                    user?.sendEmailVerification()
-                    onResult(true, null)
-                } else {
-                    onResult(false, task.exception?.message)
-                }
-            }
-    }
-
-    fun signOut(onResult: (Boolean) -> Unit = {}) {
-        try {
-            auth.signOut()
-            onResult(true)
+    suspend fun signUpEmail(email: String, password: String): Result<FirebaseUser?> {
+        return try {
+            val result: AuthResult = auth.createUserWithEmailAndPassword(email, password).await()
+            // Send verification (fire-and-forget but await to surface errors)
+            result.user?.sendEmailVerification()?.await()
+            Result.success(result.user)
         } catch (e: Exception) {
-            onResult(false)
+            Result.failure(e)
         }
     }
+
+    suspend fun signInEmail(email: String, password: String): Result<FirebaseUser?> {
+        return try {
+            val result = auth.signInWithEmailAndPassword(email, password).await()
+            Result.success(result.user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun sendEmailVerification(): Result<Unit> {
+        val user = auth.currentUser ?: return Result.failure(IllegalStateException("No user"))
+        return try {
+            user.sendEmailVerification().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun reloadCurrentUser(): Result<FirebaseUser?> {
+        return try {
+            val user = auth.currentUser ?: return Result.success(null)
+            user.reload().await()
+            Result.success(auth.currentUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun signOut(): Result<Unit> {
+        return try {
+            auth.signOut()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Android Google Sign-In: credential is typically obtained from GoogleSignInAccount.idToken
+     * This function expects an ID token string and will perform Firebase authentication.
+     */
+    suspend fun signInWithGoogleIdToken(idToken: String): Result<FirebaseUser?> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result = auth.signInWithCredential(credential).await()
+            Result.success(result.user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Add other providers as needed (Apple, Facebook) following same pattern
 }
