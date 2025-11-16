@@ -13,7 +13,7 @@ composeHotReload = "1.0.0-beta07"
 composeMultiplatform = "1.9.0"
 junit = "4.13.2"
 kotlin = "2.2.20"
-kotlinx-coroutines = "1.10.2"
+kotlinx-coroutines = "1.8.1" # 💡 Using 1.8.1, which is stable.
 ktor = "3.3.0"
 logback = "1.5.18"
 googleGmsGoogleServices = "4.4.4"
@@ -32,6 +32,11 @@ firebaseInappmessagingDisplay = "22.0.1"
 firebaseConfig = "23.0.1"
 playServicesAds = "24.6.0"
 
+# --- KMP ARCHITECTURAL ADDITIONS ---
+koin = "3.5.6"
+mokoMvvm = "0.16.1"
+# -----------------------------------
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -43,6 +48,8 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "a
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" } # 💡 Added alias for use in commonMain
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" } # 💡 Added alias for commonTest
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 ktor-serverCore = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
@@ -67,6 +74,14 @@ compose-foundation = { group = "androidx.compose.foundation", name = "foundation
 compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMultiplatform" }
 compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "composeMultiplatform" }
 compose-materialIconsExtended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "composeMultiplatform" }
+
+# --- KMP ARCHITECTURAL ADDITIONS ---
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+moko-mvvm = { module = "dev.icerock.moko:mvvm-core", version.ref = "mokoMvvm" }
+moko-mvvm-compose = { module = "dev.icerock.moko:mvvm-compose", version.ref = "mokoMvvm" }
+# -----------------------------------
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
