@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gibson.spica.viewmodel.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 import androidx.compose.ui.platform.LocalContext
@@ -18,7 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 
 @Composable
-fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
+fun SignupScreen(viewModel: AuthViewModel = viewModel()) {
 
     var mode by remember { mutableStateOf("email") }
     val context = LocalContext.current
