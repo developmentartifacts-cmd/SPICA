@@ -1,186 +1,228 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.*
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.gibson.spica.data.AuthService
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
+import com.gibson.spica.data.repository.AuthRepository
+import dev.icerock.moko.mvvm.viewmodel.ViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * AuthViewModel — updated to include a simple inline OTP handling state.
- * Real phone verification should be implemented in the Android module (PhoneAuthProvider),
- * but this provides the UI-driving state and placeholders to integrate platform code.
- */
+// 💡 1. Immutable State Data Class for UDF
+data class AuthState(
+    // Shared fields
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val termsAccepted: Boolean = false,
+    
+    // Phone fields
+    val dialCode: String = "+234",
+    val phoneNumber: String = "",
+    val otpCode: String = "",
+    val otpSent: Boolean = false,
+    val otpCountdown: Int = 0,
+    
+    // UI Feedback
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null,
+    
+    // 💡 Navigation Event (New KMP approach: ViewModel emits route, screen acts on it)
+    val navigationTarget: AuthNavigationTarget? = null
+)
+
+// 💡 Sealed class for clean navigation routing from the ViewModel
+sealed class AuthNavigationTarget {
+    data object Home : AuthNavigationTarget()
+    data object EmailVerify : AuthNavigationTarget()
+    data object AccountSetup : AuthNavigationTarget()
+}
+
+
+// 💡 2. Use the KMP ViewModel base and inject dependencies
 class AuthViewModel(
-    private val authService: AuthService = AuthService()
-) : ViewModel() {
+    private val authRepository: AuthRepository // 💡 Injected via Koin
+) : ViewModel() { // 💡 KMP-safe ViewModel base
 
-    // shared fields
-    var email by mutableStateOf("")
-    var password by mutableStateOf("")
-    var confirmPassword by mutableStateOf("")
-    var termsAccepted by mutableStateOf(false)
+    private val _state = MutableStateFlow(AuthState())
+    val state: StateFlow<AuthState> = _state.asStateFlow()
 
-    // phone fields
-    var dialCode by mutableStateOf("+234")
-    var phoneNumber by mutableStateOf("")
-    var otpCode by mutableStateOf("")
-    var otpSent by mutableStateOf(false)           // true when code requested and awaiting entry
-    var otpCountdown by mutableStateOf(0)          // seconds remaining
-    var isLoading by mutableStateOf(false)
+    // --- State Updaters ---
+    fun setEmail(value: String) = updateState { it.copy(email = value, errorMessage = null) }
+    fun setPassword(value: String) = updateState { it.copy(password = value, errorMessage = null) }
+    fun setConfirmPassword(value: String) = updateState { it.copy(confirmPassword = value, errorMessage = null) }
+    fun setTermsAccepted(value: Boolean) = updateState { it.copy(termsAccepted = value) }
+    fun setPhoneNumber(value: String) = updateState { it.copy(phoneNumber = value, errorMessage = null) }
+    fun setOtpCode(value: String) = updateState { it.copy(otpCode = value, errorMessage = null) }
 
-    var errorMessage by mutableStateOf<String?>(null)
-    var successMessage by mutableStateOf<String?>(null)
+    private fun updateState(block: (AuthState) -> AuthState) {
+        _state.value = block(_state.value)
+    }
+
+    // Call this from the UI when the navigation is handled
+    fun navigationHandled() = updateState { it.copy(navigationTarget = null) }
 
     // -------------------------
-    // Email flows (unchanged)
+    // Email flows
     // -------------------------
-    fun loginEmail(onSuccess: (() -> Unit)? = null) {
-        if (email.isBlank() || password.isBlank()) {
-            errorMessage = "Email and password required."
-            return
+    fun loginEmail() {
+        if (_state.value.email.isBlank() || _state.value.password.isBlank()) {
+            return updateState { it.copy(errorMessage = "Email and password required.") }
         }
-        isLoading = true
+        updateState { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+
         viewModelScope.launch {
-            val res = authService.signInEmail(email.trim(), password)
-            isLoading = false
+            val currentState = _state.value
+            val res = authRepository.signInEmail(currentState.email.trim(), currentState.password)
+            
             res.onSuccess {
-                successMessage = "Login successful!"
-                Router.navigate(Screen.Home.route)
-                onSuccess?.invoke()
+                updateState {
+                    it.copy(
+                        successMessage = "Login successful!",
+                        navigationTarget = AuthNavigationTarget.Home,
+                        isLoading = false
+                    )
+                }
             }.onFailure {
-                errorMessage = it.localizedMessage ?: "Login failed"
+                updateState {
+                    it.copy(
+                        errorMessage = it.localizedMessage ?: "Login failed",
+                        isLoading = false
+                    )
+                }
             }
         }
     }
 
     fun signupEmail() {
-        if (!termsAccepted) {
-            errorMessage = "You must accept Terms & Privacy Policy."
-            return
+        val currentState = _state.value
+        if (!currentState.termsAccepted) {
+            return updateState { it.copy(errorMessage = "You must accept Terms & Privacy Policy.") }
         }
-        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-            errorMessage = "All fields required."
-            return
-        }
-        if (password != confirmPassword) {
-            errorMessage = "Passwords do not match."
-            return
+        if (currentState.password != currentState.confirmPassword) {
+            return updateState { it.copy(errorMessage = "Passwords do not match.") }
         }
 
-        isLoading = true
+        updateState { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+        
         viewModelScope.launch {
-            val res = authService.signUpEmail(email.trim(), password)
-            isLoading = false
+            val res = authRepository.signUpEmail(currentState.email.trim(), currentState.password)
+            
             res.onSuccess {
-                successMessage = "Signup successful — check your email to verify."
-                Router.navigate(Screen.EmailVerify.route)
+                updateState {
+                    it.copy(
+                        successMessage = "Signup successful — check your email to verify.",
+                        navigationTarget = AuthNavigationTarget.EmailVerify,
+                        isLoading = false
+                    )
+                }
             }.onFailure {
-                errorMessage = it.localizedMessage ?: "Signup failed"
+                updateState {
+                    it.copy(
+                        errorMessage = it.localizedMessage ?: "Signup failed",
+                        isLoading = false
+                    )
+                }
             }
         }
     }
 
     fun signupWithGoogle(idToken: String) {
-        isLoading = true
+        updateState { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+        
         viewModelScope.launch {
-            val res = authService.signInWithGoogleIdToken(idToken)
-            isLoading = false
+            val res = authRepository.signInWithGoogleToken(idToken)
+            
             res.onSuccess {
-                successMessage = "Signed in with Google"
-                Router.navigate(Screen.AccountSetup.route)
+                updateState {
+                    it.copy(
+                        successMessage = "Signed in with Google",
+                        navigationTarget = AuthNavigationTarget.AccountSetup,
+                        isLoading = false
+                    )
+                }
             }.onFailure {
-                errorMessage = it.localizedMessage ?: "Google sign-in failed"
+                updateState {
+                    it.copy(
+                        errorMessage = it.localizedMessage ?: "Google sign-in failed",
+                        isLoading = false
+                    )
+                }
             }
         }
     }
 
     // -------------------------
-    // Phone flows (UI state)
+    // Phone flows (Cleaned-up state management)
     // -------------------------
-    /**
-     * Initiates phone flow. In a real app, call the Android PhoneAuthProvider here and set `otpSent`
-     * when SMS is sent. For now this method triggers UI state and a local timer; replace with
-     * platform-specific code that obtains verificationId and handles callbacks.
-     */
-    fun startPhoneVerification(fullPhone: String, onSmsRequested: ((Boolean) -> Unit)? = null) {
+    fun startPhoneVerification(onSmsRequested: (Boolean) -> Unit) {
+        val fullPhone = _state.value.dialCode + _state.value.phoneNumber
         if (fullPhone.isBlank()) {
-            errorMessage = "Phone number required."
-            return
+            return updateState { it.copy(errorMessage = "Phone number required.") }
         }
-        errorMessage = null
-        isLoading = true
+        
+        // 💡 In a real implementation, you would call the platform-specific PhoneAuthRepository here.
+        // The implementation details are abstracted away, but the UI state logic remains here.
+        updateState { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+        
         viewModelScope.launch {
             try {
-                // Placeholder: in Android, launch PhoneAuthProvider flow and wait callback.
-                // For UI demo we mark otpSent true and start countdown.
-                delay(600) // simulated network latency
-                otpSent = true
-                otpCode = ""
+                // Placeholder: Simulate request and platform-specific SMS logic completion
+                delay(600) 
+                updateState { 
+                    it.copy(
+                        otpSent = true, 
+                        otpCode = "", 
+                        successMessage = "OTP sent to $fullPhone"
+                    ) 
+                }
                 startOtpCountdown()
-                successMessage = "OTP sent to $fullPhone"
-                onSmsRequested?.invoke(true)
+                onSmsRequested.invoke(true)
             } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Failed to request code"
-                onSmsRequested?.invoke(false)
+                updateState { it.copy(errorMessage = e.localizedMessage ?: "Failed to request code") }
+                onSmsRequested.invoke(false)
             } finally {
-                isLoading = false
+                updateState { it.copy(isLoading = false) }
             }
         }
     }
 
     private fun startOtpCountdown(seconds: Int = 60) {
         viewModelScope.launch {
-            otpCountdown = seconds
-            while (otpCountdown > 0) {
+            updateState { it.copy(otpCountdown = seconds) }
+            while (_state.value.otpCountdown > 0 && _state.value.otpSent) {
                 delay(1000)
-                otpCountdown -= 1
+                updateState { it.copy(otpCountdown = it.otpCountdown - 1) }
             }
         }
     }
 
-    fun resendOtp(fullPhone: String) {
-        // In real implementation, re-trigger platform phone auth resend
-        startPhoneVerification(fullPhone)
+    fun resendOtp() {
+        startPhoneVerification { /* ignore result */ }
     }
 
-    /**
-     * Verify OTP entered by user.
-     * Replace with platform-specific verification using verificationId + code.
-     * For now: accept any 4-8 digit code as success to progress to AccountSetup.
-     */
-    fun verifyPhoneOtp(onVerified: (() -> Unit)? = null) {
-        if (!otpSent) {
-            errorMessage = "No OTP requested."
-            return
-        }
-        if (otpCode.length < 4) {
-            errorMessage = "Enter the full code."
-            return
+    fun verifyPhoneOtp() {
+        if (!_state.value.otpSent || _state.value.otpCode.length < 4) {
+            return updateState { it.copy(errorMessage = "Enter the full code.") }
         }
 
-        isLoading = true
+        updateState { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
+        
         viewModelScope.launch {
             try {
-                // Placeholder verification:
+                // Placeholder verification: in a real app, call platform-specific auth.
                 delay(500)
-                // If real implementation, verify with Firebase using verificationId and code.
-                successMessage = "Phone verified"
-                Router.navigate(Screen.AccountSetup.route)
-                onVerified?.invoke()
+                updateState { 
+                    it.copy(
+                        successMessage = "Phone verified",
+                        navigationTarget = AuthNavigationTarget.AccountSetup,
+                        isLoading = false
+                    )
+                }
             } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Verification failed"
-            } finally {
-                isLoading = false
+                updateState { it.copy(errorMessage = e.localizedMessage ?: "Verification failed", isLoading = false) }
             }
         }
-    }
-
-    fun clearMessages() {
-        errorMessage = null
-        successMessage = null
     }
 }
