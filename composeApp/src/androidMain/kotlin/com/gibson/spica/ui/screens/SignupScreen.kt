@@ -14,12 +14,13 @@ import com.gibson.spica.navigation.Router
 import com.gibson.spica.navigation.Screen
 import androidx.compose.ui.platform.LocalContext
 import com.gibson.spica.data.CountryCodeData
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 
 @Composable
 fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
-    // UI-mode: "email" | "phone" | "google" (google handled via button)
-    var mode by remember { mutableStateOf("email") }
 
+    var mode by remember { mutableStateOf("email") }
     val context = LocalContext.current
 
     Column(
@@ -29,14 +30,15 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
             .padding(top = 32.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        Text("Create Account", style = MaterialTheme.typography.headlineMedium)
 
+        Text("Create Account", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
 
-        // -------------------
-        // Email mode (default)
-        // -------------------
+        // ----------------------------------------------------
+        // EMAIL SIGNUP (DEFAULT)
+        // ----------------------------------------------------
         if (mode == "email") {
+
             OutlinedTextField(
                 value = viewModel.email,
                 onValueChange = { viewModel.email = it },
@@ -45,7 +47,9 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = viewModel.password,
                 onValueChange = { viewModel.password = it },
@@ -54,7 +58,9 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = viewModel.confirmPassword,
                 onValueChange = { viewModel.confirmPassword = it },
@@ -67,20 +73,20 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
             Spacer(Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // stable independent checkbox state in viewModel.termsAccepted
                 Checkbox(
                     checked = viewModel.termsAccepted,
                     onCheckedChange = { viewModel.termsAccepted = it }
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("I have read and agree to SPICA's Terms & Privacy")
+                Text("I agree to SPICA's Terms & Privacy")
             }
 
             Spacer(Modifier.height(12.dp))
 
             Button(
                 onClick = { viewModel.signupEmail() },
-                enabled = viewModel.termsAccepted &&
+                enabled =
+                viewModel.termsAccepted &&
                         viewModel.email.isNotBlank() &&
                         viewModel.password.isNotBlank() &&
                         viewModel.confirmPassword.isNotBlank() &&
@@ -91,64 +97,67 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
             }
         }
 
-        // -------------------
-        // Phone mode (inline OTP)
-        // -------------------
+        // ----------------------------------------------------
+        // PHONE SIGNUP (OTP)
+        // ----------------------------------------------------
         if (mode == "phone") {
-            // Country code selector simple dropdown (reuse CountryCodeData)
-            var expanded by remember { mutableStateOf(false) }
-            val selectedDial = viewModel.dialCode
+
+            var ccExpanded by remember { mutableStateOf(false) }
 
             OutlinedTextField(
                 value = "${viewModel.dialCode} ${viewModel.phoneNumber}",
-                onValueChange = {
-                    // keep dial and number separate — allow typing the full field for convenience
-                    // but primarily update phoneNumber by stripping dial if present
-                    val v = it.trim()
-                    if (v.startsWith("+")) {
-                        // optional: parse dial from start
-                        val parts = v.split(" ")
-                        if (parts.size > 1) {
-                            viewModel.dialCode = parts[0]
-                            viewModel.phoneNumber = parts.drop(1).joinToString(" ")
-                        } else {
-                            viewModel.phoneNumber = ""
-                        }
-                    } else {
-                        viewModel.phoneNumber = v
-                    }
-                },
-                label = { Text("Phone (tap to pick country code)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = true },
+                onValueChange = {},
+                label = { Text("Phone Number") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
                 singleLine = true,
-                readOnly = true
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.clickable { ccExpanded = true }
+                    )
+                }
             )
 
-            Spacer(Modifier.height(8.dp))
-
-            // Country code menu (modal-like small dropdown)
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenu(
+                expanded = ccExpanded,
+                onDismissRequest = { ccExpanded = false }
+            ) {
                 CountryCodeData.list.forEach { cc ->
-                    DropdownMenuItem(text = { Text("${cc.name} ${cc.dialCode}") }, onClick = {
-                        viewModel.dialCode = cc.dialCode
-                        expanded = false
-                    })
+                    DropdownMenuItem(
+                        text = { Text("${cc.name} ${cc.dialCode}") },
+                        onClick = {
+                            viewModel.dialCode = cc.dialCode
+                            ccExpanded = false
+                        }
+                    )
                 }
             }
 
-            // If OTP not sent yet, show button to request code
+            Spacer(Modifier.height(8.dp))
+
             if (!viewModel.otpSent) {
-                Spacer(Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = viewModel.phoneNumber,
                     onValueChange = { viewModel.phoneNumber = it },
-                    label = { Text("Phone number (no country code)") },
+                    label = { Text("Phone number only") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = viewModel.termsAccepted,
+                        onCheckedChange = { viewModel.termsAccepted = it }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("I agree to SPICA's Terms & Privacy")
+                }
 
                 Spacer(Modifier.height(12.dp))
 
@@ -157,17 +166,22 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
                         val full = "${viewModel.dialCode}${viewModel.phoneNumber}".replace(" ", "")
                         viewModel.startPhoneVerification(full)
                     },
-                    enabled = viewModel.phoneNumber.isNotBlank() && !viewModel.isLoading,
+                    enabled =
+                    viewModel.phoneNumber.isNotBlank() &&
+                            viewModel.termsAccepted &&
+                            !viewModel.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Request code")
                 }
+
             } else {
-                // OTP entry UI (inline)
-                Spacer(Modifier.height(8.dp))
-                Text("Enter the code sent to ${viewModel.dialCode} ${viewModel.phoneNumber}")
 
                 Spacer(Modifier.height(8.dp))
+                Text("Enter code sent to ${viewModel.dialCode} ${viewModel.phoneNumber}")
+
+                Spacer(Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = viewModel.otpCode,
                     onValueChange = { viewModel.otpCode = it },
@@ -178,25 +192,29 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
                 )
 
                 Spacer(Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+
                     Button(
-                        onClick = {
-                            viewModel.verifyPhoneOtp()
-                        },
+                        onClick = { viewModel.verifyPhoneOtp() },
                         enabled = viewModel.otpCode.length >= 4 && !viewModel.isLoading,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Verify")
-                    }
+                    ) { Text("Verify") }
 
                     OutlinedButton(
                         onClick = {
                             val full = "${viewModel.dialCode}${viewModel.phoneNumber}".replace(" ", "")
                             viewModel.resendOtp(full)
                         },
-                        enabled = viewModel.otpCountdown == 0
+                        enabled = viewModel.otpCountdown == 0,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        if (viewModel.otpCountdown > 0) Text("Resend in ${viewModel.otpCountdown}s") else Text("Resend")
+                        if (viewModel.otpCountdown > 0)
+                            Text("Resend in ${viewModel.otpCountdown}s")
+                        else Text("Resend")
                     }
                 }
             }
@@ -204,33 +222,34 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Divider
+        // ----------------------------------------------------
+        // "or" divider
+        // ----------------------------------------------------
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Divider(modifier = Modifier.weight(1f).height(1.dp))
-            Text("  or  ", style = MaterialTheme.typography.bodyMedium)
-            Divider(modifier = Modifier.weight(1f).height(1.dp))
+            Divider(modifier = Modifier.weight(1f))
+            Text("  or  ")
+            Divider(modifier = Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // Bottom buttons: Google and toggle other method (email/phone)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = {
-                    // Platform-specific Google sign-in: you must call Android GoogleSignIn to get idToken
-                    // Then call viewModel.signupWithGoogle(idToken)
-                    // Placeholder here:
-                    // TODO: launch Google Sign-in in Android module and call viewModel.signupWithGoogle(token)
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Sign up with Google")
-            }
+        // ----------------------------------------------------
+        // Bottom buttons (Google + Switch mode)
+        // ----------------------------------------------------
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
 
             Button(
                 onClick = {
-                    mode = if (mode == "email") "phone" else "email"
+                    // Android-specific real Google sign-in will be added later
                 },
+                modifier = Modifier.weight(1f)
+            ) { Text("Google") }
+
+            Button(
+                onClick = { mode = if (mode == "email") "phone" else "email" },
                 modifier = Modifier.weight(1f)
             ) {
                 Text(if (mode == "email") "Use Phone" else "Use Email")
@@ -243,7 +262,9 @@ fun SignupScreen(viewModel: AuthViewModel = AuthViewModel()) {
             Text("Already have an account? Log in")
         }
 
-        // messages
+        // ----------------------------------------------------
+        // Error / Success messages
+        // ----------------------------------------------------
         viewModel.errorMessage?.let {
             Spacer(Modifier.height(8.dp))
             Text(it, color = MaterialTheme.colorScheme.error)
