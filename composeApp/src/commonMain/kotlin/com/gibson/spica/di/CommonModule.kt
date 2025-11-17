@@ -5,6 +5,7 @@ import com.gibson.spica.data.repository.CountryCodeData
 import com.gibson.spica.data.repository.LocationData
 import com.gibson.spica.viewmodel.AuthViewModel
 import com.gibson.spica.viewmodel.EmailVerifyViewModel
+import com.gibson.spica.viewmodel.SplashViewModel
 import dev.icerock.moko.mvvm.viewmodel.ViewModel
 import org.koin.core.definition.Definition
 import org.koin.core.definition.KoinDefinition
@@ -42,7 +43,15 @@ val commonModule = module {
             authRepository = get() 
         ) 
     }
-    
+
+   
+    // 💡 ADD  NEW SPLASH VIEWMODEL
+viewModelDefinition {
+    SplashViewModel(
+        authRepository = get() 
+    )
+}
+
     // 💡 Add definitions for FileViewModel, LocationViewModel, etc., here later.
     
     // ----------------------------------------------------
