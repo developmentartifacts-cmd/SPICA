@@ -9,6 +9,7 @@ import com.gibson.spica.di.androidModules
 import com.gibson.spica.di.commonModule
 import com.gibson.spica.navigation.Screen // Ensure this is imported for route access
 import com.gibson.spica.ui.theme.SpicaTheme
+import com.gibson.spica.ui.AppNavigation
 import com.gibson.spica.viewmodel.SplashDestination
 import com.gibson.spica.viewmodel.SplashViewModel
 import com.google.firebase.FirebaseApp // 💡 Firebase Core Initialization
@@ -72,8 +73,8 @@ class MainActivity : ComponentActivity() {
 
                 // 8. Launch the main navigation host with the determined start route
                 SpicaTheme {
-                    // AppNavigation(initialDestination = initialDestination) 
-                    App() 
+                     AppNavigation(initialDestination = initialDestination) 
+                    
                 }
             }
         }
