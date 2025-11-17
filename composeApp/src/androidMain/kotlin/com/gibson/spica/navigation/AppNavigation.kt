@@ -1,86 +1,82 @@
-package com.gibson.spica.navigation
+package com.gibson.spica.ui
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.gibson.spica.ui.AppNavBar
-import com.gibson.spica.ui.screens.*
-import com.gibson.spica.viewmodel.AccountSetupViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.gibson.spica.navigation.Screen
+import com.gibson.spica.ui.screens.WelcomeScreen // Assuming your screens are here
 
+// 💡 This is the 'actual' implementation of the 'expect' function
 @Composable
-actual fun AppNavigation() {
-val current = Router.currentRoute
-val sharedAccountSetupViewModel = remember { AccountSetupViewModel() }
+actual fun AppNavigation(
+    initialDestination: String? // 💡 The determined start route from SplashViewModel
+) {
+    // We use Screen.Login.route as a failsafe default
+    val startDestination = initialDestination ?: Screen.Login.route
+    
+    // 1. Initialize the NavController
+    val navController = rememberNavController()
+    
+    // 2. Define a simple, consistent navigation function
+    val navigate: (String) -> Unit = { route -> 
+        navController.navigate(route) {
+            // Optional: Pop up to the start destination to avoid a large back stack
+            // popUpTo(startDestination) { saveState = true } 
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    
+    // 3. Define the NavHost using the determined startDestination
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        modifier = Modifier
+    ) {
+        // --- Startup & Auth Flow ---
+        
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onNavigateToSignup = { navigate(Screen.Signup.route) },
+                onNavigateToLogin = { navigate(Screen.Login.route) }
+            )
+        }
+        
+        // TODO: Implement LoginScreen, SignupScreen, etc.
+        composable(Screen.Login.route) { 
+            /* LoginScreen (e.g., uses koinViewModel<AuthViewModel> and passes actions) */
+        }
+        
+        composable(Screen.Signup.route) { 
+            /* SignupScreen */
+        }
 
-// 🔙 Back button handling  
-BackHandler(enabled = current != Screen.Home.route) {  
-    if (current !in listOf(  
-            Screen.Login.route,  
-            Screen.Signup.route,  
-            Screen.Welcome.route,  
-            Screen.EmailVerify.route,  
-            Screen.AccountSetup.route  
-        )  
-    ) {  
-        Router.navigate(Screen.Home.route)  
-    }  
-}  
+        composable(Screen.EmailVerify.route) {
+            /* EmailVerifyScreen */
+        }
 
-// 🧭 Scaffold layout  
-Scaffold(  
-    bottomBar = {  
-        if (current !in listOf(  
-                Screen.Welcome.route,  
-                Screen.Login.route,  
-                Screen.Signup.route,  
-                Screen.EmailVerify.route,  
-                Screen.AccountSetup.route  
-            )  
-        ) {  
-            Box(  
-                modifier = Modifier  
-                    .fillMaxWidth()  
-                    .padding(bottom = 5.dp),  
-                contentAlignment = Alignment.BottomCenter  
-            ) {  
-                AppNavBar(  
-                    currentRoute = current,  
-                    onItemClick = { route -> Router.navigate(route) }  
-                )  
-            }  
-        }  
-    }  
-) { padding ->  
-    Box(  
-        modifier = Modifier  
-            .fillMaxSize()  
-            .padding(padding),  
-        contentAlignment = Alignment.Center  
-    ) {  
-        when (current) {  
-            // 🔹 Startup & Auth  
-            Screen.Welcome.route -> WelcomeScreen()  
-            Screen.Signup.route -> SignupScreen()  
-            Screen.Login.route -> LoginScreen()  
-            Screen.EmailVerify.route -> EmailVerifyScreen()  
-            Screen.AccountSetup.route -> AccountSetupScreen(viewModel = sharedAccountSetupViewModel)  
+        composable(Screen.AccountSetup.route) {
+            /* AccountSetupScreen */
+        }
 
-            // 🌍 Main Screens  
-            Screen.Home.route -> HomeScreen()  
-            Screen.Marketplace.route -> MarketplaceScreen()  
-            Screen.Portfolio.route -> PortfolioScreen()  
-            Screen.Watchlist.route -> WatchlistScreen()  
+        // --- Main App Screens (Behind the MainNavHost) ---
+        // 💡 You would typically nest a NavGraph here for the main tabs.
+        composable(Screen.Home.route) {
+            // Placeholder: MainContent(onNavigateToMarketplace = { navigate(Screen.Marketplace.route) })
+        }
+        
+        composable(Screen.Marketplace.route) { 
+            // MarketplaceContent
+        }
 
-            // 🌀 Fallback if route missing  
-            else -> CircularProgressIndicator()  
-        }  
-    }  
+        composable(Screen.Portfolio.route) {
+            // PortfolioContent
+        }
+
+        composable(Screen.Watchlist.route) {
+            // WatchlistContent
+        }
+    }
 }
-
-}
-
