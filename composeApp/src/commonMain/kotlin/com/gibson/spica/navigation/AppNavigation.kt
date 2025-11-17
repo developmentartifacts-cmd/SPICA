@@ -1,12 +1,12 @@
-package com.gibson.spica.navigation
+package com.gibson.spica.ui
 
 import androidx.compose.runtime.Composable
 
 /**
- * Platform-agnostic navigation host.
- * Android/iOS/Desktop each provide their own actual implementation.
- *
- * startDestination is optional — platform code may pass a specific start route.
+ * Platform-specific host for the primary application navigation.
+ * It now accepts the initial route determined by the SplashViewModel.
  */
 @Composable
-expect fun AppNavigation()
+expect fun AppNavigation(
+    initialDestination: String? // 💡 New parameter
+)
