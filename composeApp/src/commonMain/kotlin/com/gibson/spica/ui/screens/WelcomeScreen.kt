@@ -6,13 +6,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
+// Removed import com.gibson.spica.navigation.Router
+// Removed import com.gibson.spica.navigation.Screen
 
 @Composable
-fun WelcomeScreen() {
+fun WelcomeScreen(
+    // 💡 New: Accepts navigation actions as lambda parameters (State Hoisting)
+    onNavigateToSignup: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -35,12 +40,12 @@ fun WelcomeScreen() {
                     color = MaterialTheme.colorScheme.onBackground
                 ),
                 modifier = Modifier.padding(horizontal = 8.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(40.dp))
 
             Button(
-                onClick = { Router.navigate(Screen.Signup.route) },
+                onClick = onNavigateToSignup, // 💡 Calls the injected lambda
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Get Started")
@@ -49,7 +54,7 @@ fun WelcomeScreen() {
             Spacer(Modifier.height(12.dp))
 
             OutlinedButton(
-                onClick = { Router.navigate(Screen.Login.route) },
+                onClick = onNavigateToLogin, // 💡 Calls the injected lambda
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Already have an account? Log In")
