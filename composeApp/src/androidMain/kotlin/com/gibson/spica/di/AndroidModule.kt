@@ -1,32 +1,39 @@
 package com.gibson.spica.di
 
 import com.gibson.spica.data.repository.AndroidAuthRepository
+import com.gibson.spica.data.repository.AndroidFirestoreRepository // New
+import com.gibson.spica.data.repository.AndroidRealtimeRepository // New
 import com.gibson.spica.data.repository.AuthRepository
+import com.gibson.spica.data.repository.FirestoreRepository // Interface
+import com.gibson.spica.data.repository.RealtimeRepository // Interface
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore // New
+import com.google.firebase.database.FirebaseDatabase // New
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val androidModule = module {
     // ----------------------------------------------------
-    // Android Platform Dependencies (Firebase, Context, etc.)
+    // Android Platform Dependencies (Firebase SDKs)
     // ----------------------------------------------------
-    // FirebaseAuth is Android-specific, so it's defined here as a singleton
     single { FirebaseAuth.getInstance() }
+    single { FirebaseFirestore.getInstance() } // 💡 Firestore instance
+    single { FirebaseDatabase.getInstance() }  // 💡 Realtime Database instance
     
     // ----------------------------------------------------
     // Android Repositories (Implementation of Common Interfaces)
     // ----------------------------------------------------
-    // This tells Koin: "When someone asks for the KMP interface AuthRepository, give them the Android implementation."
     single<AuthRepository> {
-        AndroidAuthRepository(
-            auth = get() // Injects the FirebaseAuth instance defined above
-        )
+        AndroidAuthRepository(auth = get())
+    }
+
+    // 💡 Register Android Firestore implementation
+    single<FirestoreRepository> {
+        AndroidFirestoreRepository(firestore = get())
     }
     
-    // 💡 Add singletons for AndroidFirestoreRepository, AndroidRealtimeRepository, etc., here later.
-    
-    // 💡 If we add Context, it must be done carefully:
-    // single { androidApplication().applicationContext } 
+    // 💡 Register Android Realtime Database implementation
+    single<RealtimeRepository> {
+        AndroidRealtimeRepository(database = get())
+    }
 }
-
-fun androidModules() = listOf(androidModule)
