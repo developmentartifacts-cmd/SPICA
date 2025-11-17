@@ -1,68 +1,105 @@
 package com.gibson.spica.viewmodel
 
-import androidx.compose.runtime.*
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.gibson.spica.data.AuthService
-import com.gibson.spica.navigation.Router
-import com.gibson.spica.navigation.Screen
+import com.gibson.spica.data.repository.AuthRepository
+import dev.icerock.moko.mvvm.viewmodel.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+// 💡 1. Immutable State Data Class for UDF
 data class EmailVerifyState(
     val isLoading: Boolean = false,
     val message: String? = null,
-    val isVerified: Boolean = false
+    val isVerified: Boolean = false,
+    val navigationTarget: EmailVerifyNavigationTarget? = null // New
 )
 
-class EmailVerifyViewModel(
-    private val authService: AuthService = AuthService()
-) : ViewModel() {
+// 💡 Sealed class for clean navigation routing
+sealed class EmailVerifyNavigationTarget {
+    data object AccountSetup : EmailVerifyNavigationTarget()
+}
 
-    var state by mutableStateOf(EmailVerifyState())
-        private set
+// 💡 2. Use the KMP ViewModel base and inject the AuthRepository
+class EmailVerifyViewModel(
+    private val authRepository: AuthRepository // 💡 Injected via Koin
+) : ViewModel() { // 💡 KMP-safe ViewModel base
+
+    private val _state = MutableStateFlow(EmailVerifyState())
+    val state: StateFlow<EmailVerifyState> = _state.asStateFlow()
 
     init {
-        // send verification if needed (safe to call)
+        // Automatically send verification email on entry if needed
         viewModelScope.launch {
             sendVerificationIfNeeded()
         }
     }
 
+    private fun updateState(block: (EmailVerifyState) -> EmailVerifyState) {
+        _state.value = block(_state.value)
+    }
+
+    // Call this from the UI when the navigation is handled
+    fun navigationHandled() = updateState { it.copy(navigationTarget = null) }
+
     private suspend fun sendVerificationIfNeeded() {
-        val user = authService.currentUser
+        // We rely on the AuthRepository to know the current user's state
+        val user = authRepository.currentUser.value
         if (user != null && !user.isEmailVerified) {
-            val res = authService.sendEmailVerification()
-            state = state.copy(message = res.exceptionOrNull()?.localizedMessage ?: "Verification email sent.")
+            val res = authRepository.sendEmailVerification()
+            updateState {
+                it.copy(
+                    message = res.exceptionOrNull()?.localizedMessage ?: "Verification email sent."
+                )
+            }
         }
     }
 
     fun resendVerificationEmail() {
         viewModelScope.launch {
-            state = state.copy(isLoading = true, message = null)
-            val res = authService.sendEmailVerification()
-            state = state.copy(isLoading = false, message = res.exceptionOrNull()?.localizedMessage ?: "Verification email resent.")
+            updateState { it.copy(isLoading = true, message = null) }
+            val res = authRepository.sendEmailVerification()
+            updateState {
+                it.copy(
+                    isLoading = false,
+                    message = res.exceptionOrNull()?.localizedMessage ?: "Verification email resent."
+                )
+            }
         }
     }
 
     fun checkVerificationStatus() {
         viewModelScope.launch {
-            state = state.copy(isLoading = true, message = null)
-            val reloadRes = authService.reloadCurrentUser()
+            updateState { it.copy(isLoading = true, message = null) }
+            
+            // 💡 CRITICAL: Reloads the user state from the service layer
+            val reloadRes = authRepository.reloadUser() 
+            
             if (reloadRes.isFailure) {
-                state = state.copy(isLoading = false, message = reloadRes.exceptionOrNull()?.localizedMessage)
+                updateState { it.copy(isLoading = false, message = reloadRes.exceptionOrNull()?.localizedMessage) }
                 return@launch
             }
-            val user = reloadRes.getOrNull()
+            
+            // Check the new state from the repository
+            val user = authRepository.currentUser.value 
+            
             if (user?.isEmailVerified == true) {
-                state = state.copy(isLoading = false, isVerified = true, message = "Email verified")
-                Router.navigate(Screen.AccountSetup.route)
+                updateState { 
+                    it.copy(
+                        isLoading = false, 
+                        isVerified = true, 
+                        message = "Email verified", 
+                        navigationTarget = EmailVerifyNavigationTarget.AccountSetup // 💡 Emit Nav Event
+                    ) 
+                }
             } else {
-                state = state.copy(isLoading = false, message = "Email not verified yet.")
+                updateState { it.copy(isLoading = false, message = "Email not verified yet.") }
             }
         }
     }
 
+    // 💡 Navigation logic moved to state emission
     fun skipVerification() {
-        Router.navigate(Screen.AccountSetup.route)
+        updateState { it.copy(navigationTarget = EmailVerifyNavigationTarget.AccountSetup) }
     }
 }
