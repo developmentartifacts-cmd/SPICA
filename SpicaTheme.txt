@@ -1,39 +1,55 @@
 package com.gibson.spica.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// 🎨 Monochrome palette for SPICA
+// --------------------------------------------------------------------
+// SPICA — PURE MONOCHROME THEME (Consistent with official SPICATheme.txt)
+// --------------------------------------------------------------------
 
+// DARK MODE PALETTE (Black → White)
 private val DarkColors = darkColorScheme(
-    background = Color(0xFF000000),     // Pure black background
-    onBackground = Color(0xFFFFFFFF),  // White text/icons on black
-    surface = Color(0xFF121212),       // Slightly lifted surface
-    onSurface = Color(0xFFFFFFFF),
-    primary = Color(0xFFFFFFFF),       // White for active icons/pills
-    onPrimary = Color(0xFF000000),     // Black content inside white pill
-    secondary = Color(0xFFBDBDBD),     // Light grey for unselected icons
+    background = Color(0xFF000000),     // Pure Black
+    onBackground = Color(0xFFFFFFFF),   // White
+
+    surface = Color(0xFF121212),        // Slightly elevated dark surface
+    onSurface = Color(0xFFFFFFFF),      // White
+
+    primary = Color(0xFFFFFFFF),        // White (active icons, active pill)
+    onPrimary = Color(0xFF000000),      // Black text/icon inside white pill
+
+    secondary = Color(0xFFBDBDBD),      // Light gray (inactive icons)
+    onSecondary = Color(0xFF000000)
 )
 
+// LIGHT MODE PALETTE (White → Black)
 private val LightColors = lightColorScheme(
-    background = Color(0xFFFFFFFF),     // Pure white background
-    onBackground = Color(0xFF000000),  // Black text/icons on white
-    surface = Color(0xFFF5F5F5),       // Light lifted surface
-    onSurface = Color(0xFF000000),
-    primary = Color(0xFF000000),       // Black for active icons/pills
-    onPrimary = Color(0xFFFFFFFF),     // White icon inside black pill
-    secondary = Color(0xFF9E9E9E),     // Dim grey for unselected icons
+    background = Color(0xFFFFFFFF),     // Pure White
+    onBackground = Color(0xFF000000),   // Black
+
+    surface = Color(0xFFF5F5F5),        // Light lifted surface
+    onSurface = Color(0xFF000000),      // Black
+
+    primary = Color(0xFF000000),        // Black (active icons, active pill)
+    onPrimary = Color(0xFFFFFFFF),      // White inside black pill
+
+    secondary = Color(0xFF9E9E9E),      // Dim gray (inactive icons)
+    onSecondary = Color(0xFFFFFFFF)
 )
 
+// --------------------------------------------------------------------
+// ROOT THEME COMPOSABLE
+// --------------------------------------------------------------------
 @Composable
 fun SpicaTheme(
-    isDarkTheme: Boolean = false,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colors = if (isDarkTheme) DarkColors else LightColors
+    val colors = if (darkTheme) DarkColors else LightColors
 
     MaterialTheme(
         colorScheme = colors,
