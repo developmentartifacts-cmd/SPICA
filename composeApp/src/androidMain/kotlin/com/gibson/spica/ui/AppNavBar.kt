@@ -1,4 +1,4 @@
-package com.gibson.spica.ui
+/*package com.gibson.spica.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -156,3 +156,4 @@ actual fun AppNavBar(currentRoute: String?, onItemClick: (route: String) -> Unit
         }
     }
 }
+*/
